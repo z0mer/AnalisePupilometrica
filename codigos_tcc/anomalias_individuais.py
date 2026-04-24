@@ -244,6 +244,291 @@ def classificar_comportamento_fixacao(stats):
     return "Padrao misto"
 
 
+# ── Estatísticas globais ───────────────────────────────────────────────────────
+
+def _estatisticas_globais(lista_anomalias_dados):
+    from collections import Counter
+    if not lista_anomalias_dados:
+        return {}
+
+    def _safe_vals(chave):
+        return [
+            d[chave] for d in lista_anomalias_dados
+            if chave in d and d[chave] is not None and not np.isnan(d[chave])
+        ]
+
+    tipos = [d["tipo"] for d in lista_anomalias_dados]
+    deltas = _safe_vals("delta_diam")
+    durs = [d["duracao_anom"] for d in lista_anomalias_dados]
+    primeiros = [d.get("primeiro_sinal") for d in lista_anomalias_dados if d.get("primeiro_sinal")]
+    mais_freq = Counter(primeiros).most_common(1)
+    trs_s = _safe_vals("TR_steering_s")
+    trs_p = _safe_vals("TR_pupila_s")
+
+    return {
+        "total": len(lista_anomalias_dados),
+        "por_tipo": dict(Counter(tipos)),
+        "dur_media": float(np.nanmean(durs)) if durs else np.nan,
+        "dur_max": float(np.nanmax(durs)) if durs else np.nan,
+        "dur_min": float(np.nanmin(durs)) if durs else np.nan,
+        "delta_medio": float(np.nanmean(deltas)) if deltas else np.nan,
+        "n_dilatacoes": sum(1 for v in deltas if v > 0),
+        "n_contracoes": sum(1 for v in deltas if v < 0),
+        "primeiro_sinal_mais_freq": mais_freq[0][0] if mais_freq else "N/D",
+        "n_fixacoes_total_anomalias": sum(
+            d.get("stats_fixacao", {}).get("n_fixacoes", 0) for d in lista_anomalias_dados
+        ),
+        "voltas_afetadas": sorted({d["volta_num"] for d in lista_anomalias_dados}),
+        "tr_steering_medio": float(np.nanmean(trs_s)) if trs_s else np.nan,
+        "tr_pupila_medio": float(np.nanmean(trs_p)) if trs_p else np.nan,
+    }
+
+
+# ── Textos analíticos para o PDF ───────────────────────────────────────────────
+
+def _analise_perfil_pupilar_texto(perfis_por_volta, picos_cognitivos, e_analise):
+    from reportlab.platypus import Paragraph
+
+    paragrafos = []
+
+    if not picos_cognitivos:
+        paragrafos.append(Paragraph(
+            "<b>Picos de Dilatacao Pupilar:</b> Nenhum pico de dilatacao significativo "
+            f"(acima de {LIMIAR_PICO_DILATACAO_MM:.1f}mm em relacao a mediana movel) foi "
+            "identificado na sessao analisada, o que pode indicar ausencia de estressores "
+            "cognitivos proeminentes ou limitacao na resolucao dos dados.",
+            e_analise,
+        ))
+    else:
+        n_p = len(picos_cognitivos)
+        paragrafos.append(Paragraph(
+            f"<b>Picos de Dilatacao Pupilar:</b> Ao longo da sessao, foram detectados "
+            f"<b>{n_p} pico(s)</b> de dilatacao pupilar acima do limiar de "
+            f"{LIMIAR_PICO_DILATACAO_MM:.1f}mm em relacao a mediana movel. Esse padrao "
+            "pode indicar momentos de elevada carga cognitiva ou resposta de alerta "
+            "durante a conducao.",
+            e_analise,
+        ))
+
+    if perfis_por_volta:
+        medias_por_setor = [[] for _ in range(N_SETORES)]
+        for perfil in perfis_por_volta:
+            for item in perfil:
+                idx = item["setor"] - 1
+                if not np.isnan(item["media"]):
+                    medias_por_setor[idx].append(item["media"])
+        pct_centros = [(s + 0.5) * (100 / N_SETORES) for s in range(N_SETORES)]
+        medias_agg = [np.mean(v) if v else np.nan for v in medias_por_setor]
+        validas = [(i, m) for i, m in enumerate(medias_agg) if not np.isnan(m)]
+
+        if validas:
+            s_max = max(validas, key=lambda x: x[1])
+            s_min = min(validas, key=lambda x: x[1])
+            amplitude = s_max[1] - s_min[1]
+            variab_str = "alta variabilidade pupilar ao longo da pista" if amplitude > 0.5 else "variacao moderada entre setores"
+            pct_max_ini = s_max[0] * (100 / N_SETORES)
+            pct_max_fim = (s_max[0] + 1) * (100 / N_SETORES)
+            paragrafos.append(Paragraph(
+                f"<b>Perfil Pupilar por Setor:</b> O perfil medio revela diametro mais "
+                f"elevado no Setor {s_max[0]+1} ({pct_max_ini:.0f}%–{pct_max_fim:.0f}% da pista, "
+                f"media={s_max[1]:.3f}mm) e o menor diametro no Setor {s_min[0]+1} "
+                f"(media={s_min[1]:.3f}mm). A amplitude de variacao entre setores foi de "
+                f"{amplitude:.3f}mm, indicando {variab_str}.",
+                e_analise,
+            ))
+        else:
+            paragrafos.append(Paragraph(
+                "<b>Perfil Pupilar por Setor:</b> Dados insuficientes para calcular o perfil por setor.",
+                e_analise,
+            ))
+
+    if len(perfis_por_volta) > 1:
+        paragrafos.append(Paragraph(
+            f"<b>Consistencia entre Voltas:</b> O perfil foi calculado com base em "
+            f"{len(perfis_por_volta)} volta(s). A consistencia do padrao entre voltas "
+            "pode indicar estabilidade na resposta pupilar ao longo da sessao ou, se "
+            "houver divergencia, variabilidade situacional associada ao estado do piloto.",
+            e_analise,
+        ))
+
+    return paragrafos
+
+
+def _analise_fixacoes_texto(df_fix_v, stats_fix, e_analise):
+    from reportlab.platypus import Paragraph
+
+    n = stats_fix.get("n_fixacoes", 0)
+    if n == 0:
+        return [Paragraph(
+            "Nao foram registradas fixacoes nesta volta ou os dados nao estao disponiveis.",
+            e_analise,
+        )]
+
+    dur_media = stats_fix.get("dur_media_ms", np.nan)
+    n_curtas = stats_fix.get("n_curtas", 0)
+    n_longas = stats_fix.get("n_longas", 0)
+    pct_curtas = n_curtas / n * 100
+    pct_longas = n_longas / n * 100
+    comportamento = classificar_comportamento_fixacao(stats_fix)
+
+    dur_str = f"A duracao media foi de <b>{dur_media:.0f}ms</b>. " if not np.isnan(dur_media) else ""
+    p1 = Paragraph(
+        f"<b>Resumo de Fixacoes:</b> Nesta volta foram registradas <b>{n} fixacao(oes)</b> oculares. "
+        f"{dur_str}"
+        f"Das fixacoes, <b>{pct_curtas:.0f}%</b> foram curtas (&lt;{LIMIAR_FIXACAO_CURTA_MS:.0f}ms) "
+        f"e <b>{pct_longas:.0f}%</b> foram longas (&gt;{LIMIAR_FIXACAO_LONGA_MS:.0f}ms).",
+        e_analise,
+    )
+
+    interp_map = {
+        "Busca visual dispersa (muitas fixacoes curtas)":
+            "Fixacoes curtas em alta frequencia indicam busca visual ativa, possivelmente "
+            "associada a incerteza ou sobrecarga de informacoes.",
+        "Visao em tunel (fixacoes excessivamente longas)":
+            "Fixacoes longas excessivas podem indicar visao em tunel, com reducao da "
+            "varredura do ambiente visual e potencial perda de informacoes perifericas.",
+        "Exploracao visual normal":
+            "O padrao de exploracao visual encontra-se dentro dos parametros esperados "
+            "para conducao sob demanda moderada.",
+    }
+    interp = interp_map.get(comportamento, "O padrao misto nao permite classificacao definitiva.")
+    p2 = Paragraph(
+        f"<b>Interpretacao:</b> Classificacao: <i>{comportamento}</i>. {interp}",
+        e_analise,
+    )
+
+    return [p1, p2]
+
+
+def _analise_anomalia_texto(d, e_analise):
+    from reportlab.platypus import Paragraph
+
+    tipo = d.get("tipo", "?")
+    volta_num = d.get("volta_num", "?")
+    anom_num = d.get("anom_num", "?")
+    ini_pct = d.get("ini_pct", np.nan)
+    fim_pct = d.get("fim_pct", np.nan)
+    dur_anom = d.get("duracao_anom", np.nan)
+    primeiro_sinal = d.get("primeiro_sinal") or "N/D"
+    ordem_reacao = d.get("ordem_reacao", "N/D")
+
+    delta_d = d.get("delta_diam", np.nan)
+    d_antes = d.get("diam_antes", np.nan)
+    d_durante = d.get("diam_durante", np.nan)
+    d_depois = d.get("diam_depois", np.nan)
+
+    tr_p = d.get("TR_pupila_s", np.nan)
+    tr_s = d.get("TR_steering_s", np.nan)
+    tr_a = d.get("TR_acelerador_s", np.nan)
+    tr_f = d.get("TR_freio_s", np.nan)
+
+    stats_fix = d.get("stats_fixacao", {})
+    n_fix = stats_fix.get("n_fixacoes", 0)
+    comportamento = d.get("comportamento_visual", "N/D")
+
+    pos_str = (
+        f"{ini_pct:.1f}%–{fim_pct:.1f}%"
+        if not (np.isnan(ini_pct) or np.isnan(fim_pct))
+        else "N/D"
+    )
+    p1 = Paragraph(
+        f"<b>Contexto:</b> Anomalia do tipo <b>{tipo}</b> ({LABELS_TIPO.get(tipo, tipo)}) "
+        f"na Volta {volta_num}, entre <b>{pos_str}</b> da pista, duracao de "
+        f"<b>{_fmt(dur_anom, 's')}</b>. Primeiro sinal detectado: <b>{primeiro_sinal}</b>. "
+        f"Sequencia de resposta: <b>{ordem_reacao}</b>.",
+        e_analise,
+    )
+
+    if not np.isnan(delta_d) and abs(delta_d) > 0.3:
+        if delta_d > 0:
+            delta_interp = (
+                f"dilatacao pupilar de <b>{_fmt(delta_d, 'mm')}</b>, o que pode estar "
+                "associado a aumento de carga cognitiva ou resposta de alerta"
+            )
+        else:
+            delta_interp = (
+                f"contracao pupilar de <b>{_fmt(delta_d, 'mm')}</b>"
+            )
+    else:
+        delta_interp = "sem variacao pupilar expressiva detectada (delta &lt; 0,3mm)"
+
+    vel_str = ""
+    if (tr_p is not None and not np.isnan(tr_p) and tr_p != 0.0 and
+            not np.isnan(delta_d)):
+        vel_pupilar = abs(delta_d) / abs(tr_p)
+        vel_str = f" A velocidade de resposta pupilar estimada foi de <b>{vel_pupilar:.3f}mm/s</b>."
+
+    recup_str = ""
+    if not (np.isnan(d_depois) or np.isnan(d_durante)):
+        recup = d_depois - d_durante
+        if recup > 0.1:
+            recup_str = (
+                f" Recuperacao pupilar pos-anomalia: <b>{recup:+.3f}mm</b>, "
+                "sugerindo retorno progressivo ao estado basal."
+            )
+        elif recup < -0.1:
+            recup_str = (
+                f" Recuperacao pupilar pos-anomalia: <b>{recup:+.3f}mm</b>, "
+                "indicando manutencao da ativacao fisiologica."
+            )
+
+    p2 = Paragraph(
+        f"<b>Resposta Pupilar:</b> Diametro medio antes: <b>{_fmt(d_antes, 'mm')}</b> | "
+        f"durante: <b>{_fmt(d_durante, 'mm')}</b> | apos: <b>{_fmt(d_depois, 'mm')}</b>. "
+        f"Variacao (delta): {delta_interp}.{vel_str}{recup_str}",
+        e_analise,
+    )
+
+    todos_tr_nan = all(
+        v is None or np.isnan(v) for v in [tr_s, tr_a, tr_f, tr_p]
+    )
+    if todos_tr_nan:
+        p3 = Paragraph(
+            "<b>Tempos de Reacao:</b> Nao foi possivel calcular os tempos de reacao "
+            "para esta anomalia.",
+            e_analise,
+        )
+    else:
+        p3 = Paragraph(
+            f"<b>Tempos de Reacao</b> (relativos ao primeiro sinal): "
+            f"Steering={_fmt(tr_s, 's')} | "
+            f"Acelerador={_fmt(tr_a, 's')} | "
+            f"Freio={_fmt(tr_f, 's')} | "
+            f"Pupila={_fmt(tr_p, 's')}. "
+            "Valores negativos indicam antecipacao ao sinal principal; "
+            "valores proximos de zero indicam reacao simultanea.",
+            e_analise,
+        )
+
+    interp_fix_map = {
+        "Busca visual dispersa (muitas fixacoes curtas)":
+            "Esse padrao pode estar associado a busca ativa de referencias visuais "
+            "durante situacao de incerteza ou sobrecarga.",
+        "Visao em tunel (fixacoes excessivamente longas)":
+            "Fixacoes excessivamente longas podem refletir foco intenso em elemento "
+            "especifico, com reducao da varredura periferica.",
+        "Exploracao visual normal":
+            "O comportamento visual sugere manutencao da atencao distribuida "
+            "durante o evento.",
+    }
+    if n_fix > 0:
+        interp_fix = interp_fix_map.get(comportamento, "")
+        fix_interp_str = f" {interp_fix}" if interp_fix else ""
+        p4 = Paragraph(
+            f"<b>Comportamento Visual:</b> {n_fix} fixacao(oes) registradas na janela "
+            f"de analise. Classificacao: <i>{comportamento}</i>.{fix_interp_str}",
+            e_analise,
+        )
+    else:
+        p4 = Paragraph(
+            "<b>Comportamento Visual:</b> Nenhuma fixacao registrada na janela de analise "
+            "desta anomalia.",
+            e_analise,
+        )
+
+    return [p1, p2, p3, p4]
+
+
 # ── Análise pupilar ────────────────────────────────────────────────────────────
 
 def detectar_picos_pupila(t_pupila, diam_pupila, janela=15):
@@ -396,6 +681,21 @@ def gerar_grafico_anomalia(
     ax_steer.grid(True, alpha=0.3)
 
     plt.tight_layout()
+
+    partes_caption = []
+    if not np.isnan(delta_d):
+        sinal_c = "+" if delta_d > 0 else ""
+        partes_caption.append(f"ΔPupila={sinal_c}{delta_d:.3f}mm")
+    n_fix_cap = len(df_fix_janela) if not df_fix_janela.empty else 0
+    partes_caption.append(f"Fixacoes={n_fix_cap}")
+    if t_primeiro is not None:
+        for sinal_on, t_on in onsets_validos.items():
+            tr_val = t_on - t_primeiro
+            partes_caption.append(f"TR_{sinal_on}={tr_val:+.3f}s")
+    if partes_caption:
+        fig.text(0.5, 0.01, "  |  ".join(partes_caption),
+                 ha="center", va="bottom", fontsize=7, color="#555555", style="italic")
+
     fb = fig_para_bytes(fig)
     plt.close(fig)
     return fb
@@ -431,6 +731,25 @@ def gerar_grafico_perfil_pupilar(nome, perfis_por_volta, t_pupila_total, diam_pu
     ax1.set_xlim(0, 100)
     ax1.grid(True, alpha=0.3, axis="y")
     ax1.legend(fontsize=8)
+
+    validas_agg = [(i, m) for i, m in enumerate(medias_agg) if not np.isnan(m)]
+    if validas_agg:
+        idx_max = max(validas_agg, key=lambda x: x[1])
+        idx_min = min(validas_agg, key=lambda x: x[1])
+        ax1.annotate(
+            f"Max\n{idx_max[1]:.3f}mm",
+            xy=(pct_centros[idx_max[0]], idx_max[1]),
+            xytext=(0, 10), textcoords="offset points",
+            ha="center", fontsize=7, color="#8e44ad", fontweight="bold",
+            arrowprops=dict(arrowstyle="->", color="#8e44ad", lw=0.8),
+        )
+        ax1.annotate(
+            f"Min\n{idx_min[1]:.3f}mm",
+            xy=(pct_centros[idx_min[0]], idx_min[1]),
+            xytext=(0, 10), textcoords="offset points",
+            ha="center", fontsize=7, color="#2980b9", fontweight="bold",
+            arrowprops=dict(arrowstyle="->", color="#2980b9", lw=0.8),
+        )
 
     # Timeline with spikes
     ax2 = axes[1]
@@ -473,8 +792,16 @@ def gerar_grafico_fixacoes_volta(nome, df_fix_sync, t_ini_volta, t_fim_volta, vo
         return None
     df_v["pct_pista"] = (df_v["t_sync"] - t_ini_volta) / dur * 100.0
 
+    stats_v = estatisticas_fixacao(df_v)
+    n_fix_v = stats_v.get("n_fixacoes", 0)
+    dur_m_v = stats_v.get("dur_media_ms", np.nan)
+    dur_str_t = f" | Dur. media: {dur_m_v:.0f}ms" if not np.isnan(dur_m_v) else ""
+
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 7))
-    fig.suptitle(f"Análise de Fixações - {nome} - Volta {volta_num}", fontsize=11, fontweight="bold")
+    fig.suptitle(
+        f"Analise de Fixacoes - {nome} - Volta {volta_num} | {n_fix_v} fixacao(oes){dur_str_t}",
+        fontsize=11, fontweight="bold",
+    )
 
     # Scatter mapa de fixações
     durs_clip = df_v["duration_ms"].clip(20, 1000) if "duration_ms" in df_v.columns else pd.Series([50] * len(df_v))
@@ -545,6 +872,9 @@ def gerar_pdf_piloto(
         fontSize=13, textColor=colors.HexColor("#8e44ad"), spaceBefore=14, spaceAfter=6)
     e_rodape = ParagraphStyle("Rodape", parent=estilos["Normal"],
         fontSize=7, textColor=colors.HexColor("#95a5a6"), alignment=TA_RIGHT)
+    e_analise = ParagraphStyle("Analise", parent=estilos["Normal"],
+        fontSize=9, leading=13, spaceAfter=4, spaceBefore=2,
+        textColor=colors.HexColor("#2c3e50"))
 
     cor_tipo = {
         "A": colors.HexColor("#e74c3c"),
@@ -553,6 +883,11 @@ def gerar_pdf_piloto(
     }
 
     historia = []
+
+    glob = _estatisticas_globais(lista_anomalias_dados)
+    voltas_afetadas = glob.get("voltas_afetadas", [])
+    voltas_str = ", ".join(str(v) for v in voltas_afetadas) or "N/D"
+    por_tipo = glob.get("por_tipo", {})
 
     # ── Capa ──────────────────────────────────────────────────────────────────
     historia.append(Spacer(1, 1.0 * cm))
@@ -565,6 +900,31 @@ def gerar_pdf_piloto(
     ))
     historia.append(HRFlowable(width="100%", thickness=2,
                                 color=colors.HexColor("#2980b9"), spaceAfter=12))
+
+    # ── Introdução ────────────────────────────────────────────────────────────
+    historia.append(Paragraph("Introducao", e_sec))
+    historia.append(HRFlowable(width="100%", thickness=1,
+                                color=colors.HexColor("#2980b9"), spaceAfter=6))
+    historia.append(Paragraph(
+        f"Este relatorio apresenta a analise individualizada de anomalias de conducao "
+        f"detectadas na sessao de simulacao do piloto <b>{nome}</b>. Foram identificadas "
+        f"<b>{len(lista_anomalias_dados)} anomalia(s)</b> distribuidas em "
+        f"<b>{len(voltas_afetadas)} volta(s)</b> (Voltas: {voltas_str}). Os dados "
+        "compreendem sinais de controle do veiculo (volante, acelerador, freio) "
+        "sincronizados com dados de pupilometria (dilatacao pupilar e fixacoes oculares) "
+        "registrados pelo Pupil Labs.",
+        e_analise,
+    ))
+    historia.append(Paragraph(
+        "As anomalias de steering sao classificadas em tres tipos: "
+        "<b>Tipo A</b> — Sinal Invertido (curva realizada no sentido oposto ao ideal); "
+        "<b>Tipo B</b> — Desvio Excessivo na Reta (saida indevida da trajetoria em trechos retos); "
+        "<b>Tipo C</b> — Correcao Brusca de Volante (input abrupto com alta taxa de variacao). "
+        "Para cada evento anomalo, sao calculados os tempos de reacao (TR) de quatro sinais: "
+        "Steering, Acelerador, Freio e Pupila.",
+        e_analise,
+    ))
+    historia.append(Spacer(1, 0.3 * cm))
 
     # ── Resumo de anomalias ────────────────────────────────────────────────────
     resumo_data = [["Volta", "Anomalia", "Tipo", "Posicao", "Duracao",
@@ -600,6 +960,35 @@ def gerar_pdf_piloto(
     ]))
     historia.append(tab_res)
     historia.append(Spacer(1, 0.5 * cm))
+
+    # ── Metodologia ───────────────────────────────────────────────────────────
+    historia.append(Paragraph("Metodologia", e_sec))
+    historia.append(HRFlowable(width="100%", thickness=1,
+                                color=colors.HexColor("#2980b9"), spaceAfter=6))
+    historia.append(Paragraph(
+        "Para cada anomalia detectada, foi extraida uma janela temporal de "
+        "<b>3,0 segundos</b> antes do inicio e <b>2,0 segundos</b> apos o termino do evento. "
+        "Nessa janela foram analisados os seguintes sinais: "
+        "(1) <b>Steering</b> — angulo do volante (graus), comparado ao perfil ideal calculado "
+        "sobre as voltas sem anomalia; "
+        "(2) <b>Acelerador e Freio</b> — posicao dos pedais (%), capturados via telemetria MoTeC; "
+        "(3) <b>Pupila</b> — diametro pupilar (mm) registrado pelo Pupil Labs, sincronizado "
+        "via frame de referencia ('marco zero') informado manualmente.",
+        e_analise,
+    ))
+    historia.append(Paragraph(
+        "O <b>Tempo de Reacao (TR)</b> de cada sinal e calculado como a diferenca temporal "
+        "entre o onset do sinal e o onset do primeiro sinal detectado na janela. "
+        "Valores negativos indicam antecipacao; valores positivos indicam latencia. "
+        "O <b>perfil pupilar global</b> e calculado dividindo-se a pista em "
+        f"<b>{N_SETORES} setores</b> de igual duracao temporal, computando-se a media "
+        "do diametro pupilar em cada setor por volta. "
+        "As <b>fixacoes oculares</b> sao classificadas como curtas "
+        f"(&lt;{LIMIAR_FIXACAO_CURTA_MS:.0f}ms) ou longas "
+        f"(&gt;{LIMIAR_FIXACAO_LONGA_MS:.0f}ms).",
+        e_analise,
+    ))
+    historia.append(Spacer(1, 0.3 * cm))
 
     # ── Resumo cognitivo global ────────────────────────────────────────────────
     historia.append(Paragraph("Resumo Cognitivo Global", e_sec_cog))
@@ -644,6 +1033,9 @@ def gerar_pdf_piloto(
         fig_perf.seek(0)
         historia.append(Image(fig_perf, width=largura_pagina - 3 * cm, height=11 * cm))
     historia.append(Spacer(1, 0.3 * cm))
+    for p in _analise_perfil_pupilar_texto(perfis_por_volta, picos_cognitivos, e_analise):
+        historia.append(p)
+    historia.append(Spacer(1, 0.3 * cm))
 
     # ── Páginas de fixação por volta ───────────────────────────────────────────
     for v_info in lista_voltas:
@@ -659,6 +1051,18 @@ def gerar_pdf_piloto(
                                         color=colors.HexColor("#8e44ad"), spaceAfter=8))
             fig_fix.seek(0)
             historia.append(Image(fig_fix, width=largura_pagina - 3 * cm, height=11 * cm))
+            historia.append(Spacer(1, 0.3 * cm))
+            if not df_fix_sync.empty and "t_sync" in df_fix_sync.columns:
+                df_fix_v = df_fix_sync[
+                    (df_fix_sync["t_sync"] >= v_info["t_ini"]) &
+                    (df_fix_sync["t_sync"] <= v_info["t_fim"])
+                ]
+                stats_fix_v = estatisticas_fixacao(df_fix_v)
+            else:
+                stats_fix_v = estatisticas_fixacao(pd.DataFrame())
+                df_fix_v = pd.DataFrame()
+            for p in _analise_fixacoes_texto(df_fix_v, stats_fix_v, e_analise):
+                historia.append(p)
             historia.append(Spacer(1, 0.3 * cm))
 
     # ── Páginas de anomalias individuais ──────────────────────────────────────
@@ -740,10 +1144,83 @@ def gerar_pdf_piloto(
             historia.append(img)
 
         historia.append(Spacer(1, 0.3 * cm))
+        for p in _analise_anomalia_texto(d, e_analise):
+            historia.append(p)
+        historia.append(Spacer(1, 0.2 * cm))
         historia.append(Paragraph(
             f"Relatorio TCC - {nome} | Anomalia {tipo}{anom_num} | Volta {volta_num} | {data_hora}",
             e_rodape,
         ))
+
+    # ── Conclusão ─────────────────────────────────────────────────────────────
+    historia.append(PageBreak())
+    historia.append(Paragraph("Conclusao e Consideracoes Finais", e_sec))
+    historia.append(HRFlowable(width="100%", thickness=2,
+                                color=colors.HexColor("#2980b9"), spaceAfter=8))
+
+    n_a = por_tipo.get("A", 0)
+    n_b = por_tipo.get("B", 0)
+    n_c = por_tipo.get("C", 0)
+    historia.append(Paragraph(
+        f"<b>Sintese Quantitativa:</b> A sessao do piloto <b>{nome}</b> registrou "
+        f"<b>{glob.get('total', 0)} anomalia(s)</b> de steering — "
+        f"Tipo A: {n_a} | Tipo B: {n_b} | Tipo C: {n_c}. "
+        f"Duracao media das anomalias: <b>{_fmt(glob.get('dur_media', np.nan), 's')}</b> "
+        f"(min: {_fmt(glob.get('dur_min', np.nan), 's')} / "
+        f"max: {_fmt(glob.get('dur_max', np.nan), 's')}). "
+        f"Anomalias ocorreram nas voltas: {voltas_str}.",
+        e_analise,
+    ))
+
+    delta_m = glob.get("delta_medio", np.nan)
+    if not np.isnan(delta_m):
+        if delta_m > 0.2:
+            delta_interp = "tendencia de ativacao pupilar associada aos eventos de anomalia"
+        elif delta_m < -0.2:
+            delta_interp = "tendencia de subarousal ou adaptacao fisiologica durante as anomalias"
+        else:
+            delta_interp = "ausencia de padrao predominante de resposta pupilar"
+        delta_txt = (
+            f"O delta medio de diametro pupilar foi de <b>{_fmt(delta_m, 'mm')}</b>, "
+            f"sugerindo {delta_interp}. "
+        )
+    else:
+        delta_txt = "O delta medio de diametro pupilar nao pode ser calculado. "
+
+    historia.append(Paragraph(
+        f"<b>Padrao de Resposta:</b> O primeiro sinal de reacao mais frequente foi "
+        f"<b>{glob.get('primeiro_sinal_mais_freq', 'N/D')}</b>. "
+        f"{glob.get('n_dilatacoes', 0)} anomalia(s) apresentaram dilatacao pupilar e "
+        f"{glob.get('n_contracoes', 0)} apresentaram contracao. "
+        f"{delta_txt}"
+        f"O total de fixacoes registradas nas janelas de analise foi de "
+        f"<b>{glob.get('n_fixacoes_total_anomalias', 0)}</b>.",
+        e_analise,
+    ))
+
+    historia.append(Paragraph(
+        "<b>Limitacoes Metodologicas:</b> "
+        "(1) A sincronizacao entre pupilometria e telemetria e realizada por um unico ponto "
+        "de referencia manual ('marco zero'), o que pode introduzir derivacao temporal acumulada; "
+        "(2) os dados de dilatacao pupilar sao influenciados por luminosidade ambiental, "
+        "piscadas e artefatos de rastreamento; "
+        "(3) os tempos de reacao calculados sao relativos ao primeiro sinal detectado na "
+        "janela, e nao ao estimulo objetivo externo.",
+        e_analise,
+    ))
+
+    historia.append(Paragraph(
+        "<b>Sugestoes:</b> "
+        "Recomenda-se a analise comparativa entre pilotos para validacao dos padroes "
+        "identificados. Anomalias recorrentes no mesmo setor da pista (especialmente Tipos A e C) "
+        "podem indicar pontos de dificuldade sistematica que merecem atencao no treinamento. "
+        "A integracao dos dados de fixacao com os setores de alta variacao pupilar pode "
+        "oferecer indicios adicionais sobre a atencao visual durante eventos criticos. "
+        "Dados adicionais uteis incluiriam: frequencia cardiaca, condutancia eletrodermica, "
+        "e multiplos pontos de sincronizacao para reduzir a derivacao temporal.",
+        e_analise,
+    ))
+    historia.append(Spacer(1, 0.3 * cm))
 
     doc.build(historia)
     print(f"PDF gerado: {caminho_pdf}")
