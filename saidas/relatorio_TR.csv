@@ -1,134 +1,92 @@
 piloto,volta_num,anom_num,tipo,ini_pct,fim_pct,duracao_anom,primeiro_sinal,ordem_reacao,diam_antes_mm,diam_durante_mm,diam_depois_mm,delta_diam_mm,n_fixacoes_janela,dur_media_fix_ms,fix_curtas,fix_longas,comportamento_visual,TR_steering_s,TR_acelerador_s,TR_freio_s,TR_pupila_s
-Humberto,0,1,A,6.406406406406407,7.607607607607608,1.2016,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,1.78,1.85,
-Humberto,0,2,A,51.451451451451454,52.75275275275276,1.3017,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,2.0,0.49,0.0,
-Humberto,0,3,B,0.4004004004004004,3.4034034034034035,3.0039,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,0.44,0.03,0.0,
-Humberto,0,4,B,47.44744744744745,48.34834834834835,0.9012,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.74,0.76,
-Humberto,0,5,C,0.0,15.415415415415415,15.42,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,0.4,0.03,0.0,
-Humberto,0,6,C,24.924924924924927,34.83483483483484,9.9129,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,0.95,0.07,0.0,
-Humberto,0,7,C,38.43843843843844,72.57257257257258,34.1444,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.0,0.0,
-Humberto,0,8,C,74.77477477477478,80.38038038038039,5.6073,Steering,Steering -> Freio -> Acelerador,,,,,0,,0,0,Sem dados de fixacao,0.0,1.7,1.67,
-Humberto,0,9,C,84.38438438438439,88.58858858858859,4.2055,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.0,0.0,
-Humberto,0,10,C,91.0910910910911,92.1921921921922,1.1014,Steering,Steering -> Acelerador -> Freio,,,,,4,174.1,1,0,Exploracao visual normal,0.0,0.81,0.81,
-Humberto,10,1,C,2.802802802802803,10.810810810810812,8.0072,Freio,Freio -> Acelerador -> Pupila -> Steering,35.4253,35.2358,36.3883,-0.1895,65,184.8,4,0,Exploracao visual normal,0.85,0.05,0.0,0.8469
-Humberto,10,2,C,11.711711711711713,17.51751751751752,5.8052,Acelerador,Acelerador -> Steering -> Pupila -> Freio,36.3497,34.1505,31.5655,-2.1992,55,161.4,10,0,Exploracao visual normal,0.35,0.0,2.09,0.5009
-Humberto,10,3,C,26.926926926926928,36.83683683683684,9.9089,Freio,Freio -> Acelerador -> Pupila -> Steering,28.8922,29.7679,32.4479,0.8757,72,196.1,4,0,Exploracao visual normal,0.91,0.05,0.0,0.9068
-Humberto,10,4,C,39.23923923923924,72.47247247247248,33.2299,Pupila,Pupila -> Steering -> Acelerador -> Freio,32.1163,31.1468,32.8058,-0.9696,206,163.6,38,0,Exploracao visual normal,0.0261,0.0261,0.0261,0.0
-Humberto,10,5,C,73.67367367367368,79.87987987987988,6.2056,Steering,Steering -> Pupila -> Acelerador -> Freio,32.4642,28.6038,28.762,-3.8605,58,163.0,9,0,Exploracao visual normal,0.0,2.56,2.56,2.4813
-Humberto,10,6,C,81.68168168168168,83.08308308308308,1.4013,Steering,Steering -> Pupila -> Acelerador -> Freio,29.172,28.4498,28.6189,-0.7223,33,180.0,4,0,Exploracao visual normal,0.0,2.69,2.69,1.8595
-Humberto,10,7,C,84.38438438438439,88.4884884884885,4.1037,Pupila,Pupila -> Steering -> Acelerador -> Freio,28.211,29.3638,30.9245,1.1529,47,169.8,7,0,Exploracao visual normal,0.4779,0.4779,0.4779,0.0
-Humberto,20,1,B,58.45845845845846,59.55955955955956,1.1021,Acelerador,Acelerador -> Steering -> Pupila -> Freio,32.3474,31.5058,31.7865,-0.8417,33,159.5,7,0,Exploracao visual normal,1.11,0.0,2.27,2.2696
-Humberto,20,2,C,4.2042042042042045,16.616616616616618,12.4236,Freio,Freio -> Acelerador -> Steering -> Pupila,28.8059,32.1975,34.2295,3.3915,91,179.2,11,0,Exploracao visual normal,0.88,0.02,0.0,1.3996
-Humberto,20,3,C,26.826826826826828,35.93593593593594,9.1173,Pupila,Pupila -> Freio -> Acelerador -> Steering,31.0689,29.5761,32.7317,-1.4928,68,195.2,3,0,Exploracao visual normal,1.0115,0.0915,0.0415,0.0
-Humberto,20,4,C,39.43943943943944,60.06006006006007,20.6392,Pupila,Pupila -> Steering -> Acelerador -> Freio,33.927,32.5803,31.6941,-1.3467,141,163.4,24,0,Exploracao visual normal,0.5093,0.5093,0.5093,0.0
-Humberto,20,5,C,60.96096096096097,68.96896896896898,8.0152,Steering,Steering -> Acelerador -> Freio -> Pupila,31.6732,31.3021,31.1306,-0.3711,77,141.0,21,0,Exploracao visual normal,0.0,0.05,0.05,0.4606
-Humberto,20,6,C,69.96996996996998,80.48048048048048,10.52,Steering,Steering -> Pupila -> Acelerador -> Freio,31.1287,30.0847,30.2079,-1.044,85,157.9,16,0,Exploracao visual normal,0.0,1.85,1.85,0.9529
-Humberto,20,7,C,84.28428428428428,88.58858858858859,4.3082,Pupila,Pupila -> Steering -> Acelerador -> Freio,29.5012,29.9761,31.2993,0.4749,56,150.6,15,0,Exploracao visual normal,0.4873,0.4873,0.4873,0.0
-Rafa,0,1,A,6.806806806806807,7.607607607607608,0.765,Acelerador,Acelerador -> Steering -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.65,0.0,1.89,
-Rafa,0,2,B,35.83583583583584,36.63663663663664,0.765,Pupila,Pupila -> Steering -> Acelerador -> Freio,25.9599,22.2831,42.157,-3.6768,8,154.3,1,0,Exploracao visual normal,0.0243,0.0243,0.0243,0.0
-Rafa,0,3,B,47.44744744744745,48.34834834834835,0.8606,Steering,Steering -> Acelerador -> Freio -> Pupila,42.0301,42.2693,42.9122,0.2392,28,188.4,4,0,Exploracao visual normal,0.0,0.01,1.91,1.9848
-Rafa,0,4,C,0.0,0.9009009009009008,0.8606,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,0.2,0.05,0.0,
-Rafa,0,5,C,1.8018018018018016,15.115115115115117,12.7182,Acelerador,Acelerador -> Freio -> Steering,,,,,0,,0,0,Sem dados de fixacao,1.88,0.0,1.84,
-Rafa,0,6,C,17.41741741741742,19.61961961961962,2.1038,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,1.18,1.18,
-Rafa,0,7,C,25.325325325325327,32.632632632632635,6.9807,Freio,Freio -> Steering -> Acelerador,,,,,0,,0,0,Sem dados de fixacao,0.04,0.07,0.0,
-Rafa,0,8,C,33.933933933933936,37.03703703703704,2.9644,Steering,Steering -> Acelerador -> Freio,,31.3486,40.4668,,9,161.4,1,0,Exploracao visual normal,0.0,0.0,0.0,
-Rafa,0,9,C,40.54054054054054,73.57357357357358,31.5565,Pupila,Pupila -> Freio -> Acelerador -> Steering,39.5906,38.6874,31.3768,-0.9032,145,180.7,15,0,Exploracao visual normal,2.6296,2.4996,2.4596,0.0
-Rafa,0,10,C,74.57457457457458,79.97997997997999,5.1638,Steering,Steering -> Freio -> Pupila -> Acelerador,32.8654,13.823,7.4186,-19.0425,4,124.8,0,0,Exploracao visual normal,0.0,1.4,1.35,1.3851
-Rafa,0,11,C,81.28128128128128,84.58458458458459,3.1556,Steering,Steering -> Pupila -> Acelerador -> Freio,6.7835,19.2064,35.9372,12.4229,3,103.5,1,0,Exploracao visual normal,0.0,2.27,2.27,1.4471
-Rafa,0,12,C,88.2882882882883,89.2892892892893,0.9563,Pupila,Pupila -> Steering -> Acelerador -> Freio,41.6867,41.855,13.7211,0.1682,11,131.8,5,0,Busca visual dispersa (muitas fixacoes curtas),2.7398,2.7398,2.7398,0.0
-Rafa,0,13,C,90.1901901901902,90.990990990991,0.765,Pupila,Pupila -> Steering -> Acelerador -> Freio,15.9728,5.4517,11.4739,-10.5211,12,136.2,6,0,Busca visual dispersa (muitas fixacoes curtas),1.3801,2.9901,2.9901,0.0
-Rafa,10,1,B,67.06706706706707,68.46846846846847,1.3389,Acelerador,Acelerador -> Steering -> Pupila -> Freio,43.4824,41.5079,37.905,-1.9745,29,160.3,4,0,Exploracao visual normal,0.1,0.0,2.15,1.9852
-Rafa,10,2,C,3.503503503503504,11.611611611611613,7.7465,Freio,Freio -> Acelerador -> Pupila -> Steering,42.6185,43.2198,44.4738,0.6012,51,178.4,6,0,Exploracao visual normal,0.62,0.05,0.0,0.5709
-Rafa,10,3,C,13.013013013013014,16.316316316316318,3.156,Steering,Steering -> Pupila -> Acelerador -> Freio,44.0101,43.0153,43.2853,-0.9949,36,156.0,3,0,Exploracao visual normal,0.0,2.78,2.78,2.2155
-Rafa,10,4,C,17.117117117117118,17.91791791791792,0.7651,Steering,Steering -> Pupila -> Acelerador -> Freio,43.3427,43.8755,45.3109,0.5328,29,154.5,2,0,Exploracao visual normal,0.0,0.52,0.52,0.3927
-Rafa,10,5,C,22.522522522522525,25.025025025025027,2.3909,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.1691,43.1459,43.4682,-0.0232,46,131.4,15,0,Exploracao visual normal,1.3441,1.3441,1.3441,0.0
-Rafa,10,6,C,26.426426426426428,30.73073073073073,4.1123,Pupila,Pupila -> Freio -> Acelerador -> Steering,42.6462,41.085,39.5647,-1.5612,51,157.1,13,0,Exploracao visual normal,0.6857,0.3157,0.2757,0.0
-Rafa,10,7,C,35.33533533533534,42.54254254254254,6.8858,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.0047,44.937,42.8089,1.9323,64,160.5,15,0,Exploracao visual normal,2.9903,2.9903,2.9903,0.0
-Rafa,10,8,C,44.44444444444445,53.75375375375376,8.8941,Steering,Steering -> Pupila -> Acelerador -> Freio,43.5745,40.5073,42.2163,-3.0672,71,155.7,14,0,Exploracao visual normal,0.0,2.51,2.56,2.216
-Rafa,10,9,C,54.95495495495496,57.35735735735736,2.2953,Steering,Steering -> Acelerador -> Pupila -> Freio,42.4265,42.2849,42.7047,-0.1416,35,171.8,3,0,Exploracao visual normal,0.0,0.31,2.62,2.6198
-Rafa,10,10,C,58.25825825825826,60.16016016016017,1.8171,Steering,Steering -> Pupila -> Acelerador -> Freio,42.3159,45.4243,43.1027,3.1084,31,148.9,5,0,Exploracao visual normal,0.0,2.61,2.61,2.1359
-Rafa,10,11,C,61.36136136136137,79.97997997997999,17.7882,Steering,Steering -> Freio -> Acelerador -> Pupila,42.3384,41.2303,37.635,-1.1081,106,152.3,23,0,Exploracao visual normal,0.0,2.02,1.99,2.1573
-Rafa,20,1,A,62.26226226226227,63.16316316316317,0.8679,Pupila,Pupila -> Freio -> Acelerador -> Steering,46.0542,42.9406,43.6515,-3.1136,35,122.8,13,0,Exploracao visual normal,2.3406,1.7406,1.7206,0.0
-Rafa,20,2,C,3.4034034034034035,14.314314314314316,10.5116,Freio,Freio -> Acelerador -> Pupila -> Steering,37.9996,40.7589,44.8784,2.7593,76,187.5,6,0,Exploracao visual normal,0.67,0.05,0.0,0.4729
-Rafa,20,3,C,18.31831831831832,19.21921921921922,0.8679,Steering,Steering -> Pupila -> Acelerador -> Freio,45.9648,46.2948,44.9347,0.3299,34,144.9,9,0,Exploracao visual normal,0.0,1.2,1.2,0.6034
-Rafa,20,4,C,21.921921921921925,25.825825825825827,3.761,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.0296,39.8907,40.4327,-4.1388,49,148.3,13,0,Exploracao visual normal,0.6057,0.6057,0.6057,0.0
-Rafa,20,5,C,27.027027027027028,33.933933933933936,6.6541,Pupila,Pupila -> Freio -> Acelerador -> Steering,40.0037,39.6348,42.7178,-0.3689,55,166.3,14,0,Exploracao visual normal,0.6856,0.4656,0.4156,0.0
-Rafa,20,6,C,40.84084084084084,60.06006006006007,18.5158,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.5458,45.2098,48.0567,0.6641,124,147.0,37,0,Exploracao visual normal,0.0253,0.0253,0.0253,0.0
-Rafa,20,7,C,61.06106106106107,79.47947947947948,17.7443,Steering,Steering -> Acelerador -> Freio -> Pupila,48.2504,42.3939,39.9648,-5.8565,129,143.3,37,0,Exploracao visual normal,0.0,2.14,2.14,2.145
-Rafa,20,8,C,85.08508508508508,87.2872872872873,2.1216,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.1604,44.8523,44.9735,1.6919,42,156.0,13,0,Exploracao visual normal,2.9964,2.9964,2.9964,0.0
-Rafa,30,1,B,67.06706706706707,68.46846846846847,1.3284,Steering,Steering -> Acelerador -> Pupila -> Freio,39.8273,40.3907,34.9463,0.5633,29,167.7,3,0,Exploracao visual normal,0.0,0.06,2.52,2.5187
-Rafa,30,2,C,3.2032032032032034,15.115115115115117,11.2913,Freio,Freio -> Acelerador -> Pupila -> Steering,36.374,41.3699,45.6312,4.9959,77,180.4,11,0,Exploracao visual normal,0.47,0.04,0.0,0.4238
-Rafa,30,3,C,26.526526526526528,34.93493493493494,7.9703,Pupila,Pupila -> Freio -> Acelerador -> Steering,41.9633,40.3403,46.9255,-1.623,63,181.6,8,0,Exploracao visual normal,0.7425,0.5525,0.5125,0.0
-Rafa,30,4,C,40.24024024024024,58.95895895895896,17.7435,Pupila,Pupila -> Steering -> Acelerador -> Freio,50.5447,42.9724,43.6401,-7.5724,119,157.1,29,0,Exploracao visual normal,2.5497,2.5497,2.5497,0.0
-Rafa,30,5,C,59.75975975975976,68.76876876876878,8.5396,Steering,Steering -> Pupila -> Acelerador -> Freio,43.8607,39.9157,36.9962,-3.945,66,168.3,10,0,Exploracao visual normal,0.0,2.25,2.25,0.0443
-Rafa,30,6,C,69.86986986986987,78.67867867867868,8.3499,Steering,Steering -> Pupila -> Acelerador -> Freio,37.011,42.1882,32.4574,5.1773,69,153.1,15,0,Exploracao visual normal,0.0,1.91,1.91,0.6838
-Rafa,30,7,C,86.18618618618619,87.8878878878879,1.613,Pupila,Pupila -> Steering -> Acelerador -> Freio,40.3598,42.4288,42.3238,2.069,35,169.4,3,0,Exploracao visual normal,2.843,2.993,2.993,0.0
-Rafa,40,1,B,67.06706706706707,68.46846846846847,1.3368,Acelerador,Acelerador -> Steering -> Pupila -> Freio,43.4241,43.5795,42.6928,0.1554,32,170.3,7,0,Exploracao visual normal,0.3,0.0,2.68,0.3663
-Rafa,40,2,C,3.3033033033033035,12.012012012012011,8.3072,Freio,Freio -> Acelerador -> Pupila -> Steering,35.6907,38.2753,41.0257,2.5846,61,200.1,3,0,Exploracao visual normal,0.41,0.03,0.0,0.2162
-Rafa,40,3,C,13.913913913913914,15.415415415415415,1.4323,Pupila,Pupila -> Steering -> Acelerador -> Freio,41.1761,43.2936,42.3931,2.1174,32,191.8,2,0,Exploracao visual normal,0.7152,0.8252,0.8252,0.0
-Rafa,40,4,C,27.127127127127128,33.133133133133136,5.7291,Freio,Freio -> Acelerador -> Steering -> Pupila,37.5501,39.3367,38.6633,1.7865,50,192.5,3,0,Exploracao visual normal,0.47,0.05,0.0,0.4728
-Rafa,40,5,C,34.134134134134136,36.83683683683684,2.5781,Pupila,Pupila -> Steering -> Acelerador -> Freio,38.747,39.4878,42.3193,0.7409,40,170.8,7,0,Exploracao visual normal,0.6604,0.7304,0.7304,0.0
-Rafa,40,6,C,40.64064064064064,67.16716716716716,25.3037,Pupila,Pupila -> Steering -> Acelerador -> Freio,39.705,41.5513,43.5658,1.8463,152,167.7,25,0,Exploracao visual normal,0.0839,0.0839,0.0839,0.0
-Rafa,40,7,C,68.06806806806807,72.37237237237238,4.1059,Steering,Steering -> Acelerador -> Pupila -> Freio,43.5688,43.0863,44.3762,-0.4825,48,173.4,9,0,Exploracao visual normal,0.0,0.0,2.64,0.5794
-Rafa,40,8,C,73.17317317317318,80.38038038038039,6.875,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.6745,39.3999,37.227,-5.2746,59,167.3,9,0,Exploracao visual normal,0.595,2.435,2.435,0.0
-Rafa,40,9,C,85.58558558558559,87.18718718718719,1.5278,Pupila,Pupila -> Steering -> Acelerador -> Freio,40.4655,40.7865,42.0431,0.321,40,149.1,11,0,Exploracao visual normal,0.0016,0.0016,0.0016,0.0
-Rafa,50,1,B,67.16716716716716,68.46846846846847,1.2433,Steering,Steering -> Pupila -> Acelerador -> Freio,37.308,37.1102,41.7413,-0.1978,31,145.2,8,0,Exploracao visual normal,0.0,2.47,2.47,2.0411
-Rafa,50,2,B,85.58558558558559,86.38638638638639,0.7651,Pupila,Pupila -> Steering -> Acelerador -> Freio,38.6334,39.4061,41.0117,0.7727,29,175.8,4,0,Exploracao visual normal,1.1841,1.2841,1.2841,0.0
-Rafa,50,3,C,3.1031031031031038,17.31731731731732,13.5803,Freio,Freio -> Acelerador -> Pupila -> Steering,38.0868,39.7056,46.2689,1.6188,90,186.6,12,0,Exploracao visual normal,0.39,0.04,0.0,0.2437
-Rafa,50,4,C,18.61861861861862,19.91991991991992,1.2433,Steering,Steering -> Pupila -> Acelerador -> Freio,46.5352,46.9318,45.5074,0.3966,33,152.0,9,0,Exploracao visual normal,0.0,1.42,1.42,0.019
-Rafa,50,5,C,26.126126126126128,34.73473473473474,8.2247,Pupila,Pupila -> Steering -> Acelerador -> Freio,40.7319,38.1583,39.0716,-2.5736,62,192.3,4,0,Exploracao visual normal,2.9969,2.9969,2.9969,0.0
-Rafa,50,6,C,40.54054054054054,54.55455455455456,13.389,Pupila,Pupila -> Steering -> Acelerador -> Freio,46.6314,42.4951,44.1201,-4.1362,94,162.7,21,0,Exploracao visual normal,2.0246,2.0946,2.0946,0.0
-Rafa,50,7,C,55.55555555555556,67.36736736736736,11.285,Steering,Steering -> Acelerador -> Freio -> Pupila,44.0634,40.4221,35.9882,-3.6412,80,156.0,18,0,Exploracao visual normal,0.0,2.39,2.69,2.6949
-Rafa,50,8,C,68.26826826826827,80.08008008008008,11.285,Steering,Steering -> Pupila -> Acelerador -> Freio,35.682,39.3645,35.1337,3.6825,83,165.4,15,0,Exploracao visual normal,0.0,2.5,2.5,0.0702
-Rafa,50,9,C,84.68468468468468,87.8878878878879,3.0603,Pupila,Pupila -> Steering -> Acelerador -> Freio,38.2319,40.0282,35.5416,1.7963,40,172.3,6,0,Exploracao visual normal,0.2582,0.2582,0.2582,0.0
-Varela,0,1,A,27.82782782782783,31.031031031031038,3.8281,Acelerador,Acelerador -> Steering -> Freio,,,,,0,,0,0,Sem dados de fixacao,2.53,0.0,2.68,
-Varela,0,2,A,49.14914914914915,51.051051051051054,2.273,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,2.34,2.6,
-Varela,0,3,A,53.453453453453456,56.65665665665666,3.8281,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,2.71,2.71,
-Varela,0,4,B,0.3003003003003003,1.1011011011011012,0.957,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.0,0.0,
-Varela,0,5,B,16.416416416416418,18.11811811811812,2.0337,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.16,0.16,
-Varela,0,6,B,24.224224224224223,27.127127127127128,3.4693,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,2.37,0.37,0.0,
-Varela,0,7,B,35.83583583583584,39.83983983983984,4.7852,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,0.84,0.28,0.0,
-Varela,0,8,B,47.44744744744745,48.34834834834835,1.0767,Acelerador,Acelerador -> Steering -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.61,0.0,0.72,
-Varela,0,9,B,58.45845845845846,59.55955955955956,1.3159,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,2.22,2.43,
-Varela,0,10,B,67.06706706706707,68.46846846846847,1.6748,Acelerador,Acelerador -> Steering -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.38,0.0,0.93,
-Varela,0,11,B,73.57357357357358,74.97497497497498,1.6748,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,1.8,1.98,
-Varela,0,12,B,82.58258258258259,84.08408408408408,1.7944,Acelerador,Acelerador -> Steering -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.28,0.0,2.34,
-Varela,0,13,B,89.0890890890891,90.0900900900901,1.1963,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.67,0.67,
-Varela,0,14,C,0.0,1.5015015015015016,1.7944,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.0,0.0,
-Varela,0,15,C,10.31031031031031,14.214214214214214,4.6656,Freio,Freio -> Acelerador -> Steering,,,,,0,,0,0,Sem dados de fixacao,0.9,0.2,0.0,
-Varela,0,16,C,16.216216216216218,19.61961961961962,4.0674,Steering,Steering -> Acelerador -> Freio,,,,,0,,0,0,Sem dados de fixacao,0.0,0.0,0.0,
-Varela,0,17,C,21.921921921921925,62.96296296296297,49.0481,Acelerador,Acelerador -> Freio -> Steering,,,,,0,,0,0,Sem dados de fixacao,1.23,0.0,0.26,
-Varela,0,18,C,63.96396396396397,90.8908908908909,32.1804,Steering,Steering -> Acelerador -> Freio,,,,,1,216.4,0,0,Exploracao visual normal,0.0,0.57,2.53,
-Varela,0,19,C,92.5925925925926,94.994994994995,2.8711,Pupila,Pupila -> Steering -> Acelerador -> Freio,47.1518,48.9488,51.6384,1.797,24,167.0,7,0,Exploracao visual normal,0.0933,0.0933,0.0933,0.0
-Varela,10,1,A,49.14914914914915,54.15415415415416,6.526,Acelerador,Acelerador -> Steering -> Freio -> Pupila,45.1669,43.778,40.7687,-1.3889,66,148.4,13,0,Exploracao visual normal,0.08,0.0,0.87,1.5605
-Varela,10,2,A,55.75575575575576,58.35835835835836,3.3935,Steering,Steering -> Pupila -> Acelerador -> Freio,43.5774,46.1066,47.3446,2.5292,46,160.3,6,0,Exploracao visual normal,0.0,2.37,2.37,2.0721
-Varela,10,3,A,61.96196196196197,63.26326326326327,1.6968,Pupila,Pupila -> Steering -> Acelerador -> Freio,42.8535,44.065,47.9719,1.2115,33,125.1,14,0,Busca visual dispersa (muitas fixacoes curtas),0.6959,2.4359,2.4359,0.0
-Varela,10,4,A,69.66966966966967,70.87087087087087,1.5662,Pupila,Pupila -> Freio -> Acelerador -> Steering,50.696,47.6069,47.4699,-3.0891,31,156.3,7,0,Exploracao visual normal,2.3694,1.1394,0.9394,0.0
-Varela,10,5,B,2.6026026026026026,3.4034034034034035,1.0442,Pupila,Pupila -> Acelerador -> Freio -> Steering,51.1307,51.2698,49.7794,0.1391,30,181.6,4,0,Exploracao visual normal,1.8601,1.5801,1.8501,0.0
-Varela,10,6,B,23.92392392392393,27.127127127127128,4.1767,Freio,Freio -> Pupila -> Steering -> Acelerador,43.1032,47.2736,47.6081,4.1704,46,182.8,7,0,Exploracao visual normal,1.48,1.64,0.0,0.941
-Varela,10,7,B,37.13713713713714,40.64064064064064,4.5682,Freio,Freio -> Steering -> Acelerador -> Pupila,44.7345,45.946,44.146,1.2115,46,198.1,2,0,Exploracao visual normal,0.39,0.58,0.0,0.8479
-Varela,10,8,B,47.44744744744745,48.34834834834835,1.1747,Steering,Steering -> Acelerador -> Pupila -> Freio,46.0963,44.2577,45.2334,-1.8386,38,140.7,8,0,Exploracao visual normal,0.0,0.92,1.17,1.1687
-Varela,10,9,B,58.45845845845846,59.55955955955956,1.4357,Steering,Steering -> Acelerador -> Pupila -> Freio,46.2291,47.4587,45.0395,1.2296,32,158.1,7,0,Exploracao visual normal,0.0,0.11,0.66,0.654
-Varela,10,10,B,67.36736736736736,68.46846846846847,1.4357,Acelerador,Acelerador -> Pupila -> Steering -> Freio,46.3025,47.6507,50.5097,1.3482,31,168.5,6,0,Exploracao visual normal,0.84,0.0,0.84,0.4657
-Varela,10,11,B,73.57357357357358,75.77577577577578,2.8715,Steering,Steering -> Acelerador -> Pupila -> Freio,46.4363,44.5697,42.6152,-1.8666,42,154.2,12,0,Exploracao visual normal,0.0,0.51,1.94,1.9353
-Varela,10,12,B,82.58258258258259,83.48348348348348,1.1747,Freio,Freio -> Steering -> Pupila -> Acelerador,42.3548,43.1251,41.4538,0.7703,32,151.1,11,0,Exploracao visual normal,1.13,2.38,0.0,1.8281
-Varela,10,13,B,84.38438438438439,85.38538538538539,1.3052,Acelerador,Acelerador -> Steering -> Freio -> Pupila,41.6064,43.1446,43.3854,1.5382,36,145.0,15,0,Busca visual dispersa (muitas fixacoes curtas),0.51,0.0,2.63,2.6385
-Varela,10,14,B,89.98998998999,91.4914914914915,1.9578,Steering,Steering -> Pupila -> Acelerador -> Freio,42.0847,42.1162,44.3365,0.0315,37,170.8,5,0,Exploracao visual normal,0.0,0.68,0.68,0.5403
-Varela,10,15,C,1.901901901901902,10.810810810810812,11.6163,Pupila,Pupila -> Steering -> Acelerador -> Freio,50.3316,50.6909,51.1104,0.3593,81,185.4,7,0,Exploracao visual normal,0.6363,0.6363,0.6363,0.0
-Varela,10,16,C,13.413413413413414,16.516516516516518,4.0461,Pupila,Pupila -> Steering -> Acelerador -> Freio,50.7662,47.4742,45.0446,-3.292,42,173.1,6,0,Exploracao visual normal,0.1423,0.1423,0.1423,0.0
-Varela,10,17,C,22.322322322322325,31.631631631631635,12.1384,Acelerador,Acelerador -> Pupila -> Steering -> Freio,43.5508,47.2221,46.4491,3.6714,84,181.4,10,0,Exploracao visual normal,2.35,0.0,2.35,2.3496
-Varela,10,18,C,32.632632632632635,33.933933933933936,1.6968,Steering,Steering -> Pupila -> Acelerador -> Freio,46.2458,45.6102,45.3291,-0.6356,33,185.9,4,0,Exploracao visual normal,0.0,1.83,1.83,0.514
-Varela,10,19,C,35.73573573573574,56.25625625625626,26.7567,Acelerador,Acelerador -> Freio -> Steering -> Pupila,46.0114,44.4988,46.3266,-1.5126,172,166.1,26,0,Exploracao visual normal,1.39,0.0,0.22,1.3947
-Varela,10,20,C,57.95795795795796,84.48448448448448,34.5879,Steering,Steering -> Acelerador -> Pupila -> Freio,45.3126,44.8514,43.0863,-0.4612,199,149.7,58,0,Exploracao visual normal,0.0,0.32,2.78,2.7746
-Varela,10,21,C,87.8878878878879,88.78878878878879,1.1747,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.993,43.0687,41.9415,-0.9243,33,153.9,9,0,Exploracao visual normal,0.2111,0.2111,0.2111,0.0
-Varela,10,22,C,90.5905905905906,92.7927927927928,2.8715,Pupila,Pupila -> Steering -> Acelerador -> Freio,42.0265,43.236,43.4689,1.2095,41,171.4,5,0,Exploracao visual normal,0.2882,0.2982,0.2982,0.0
-Varela,20,1,C,2.2022022022022023,11.111111111111112,9.6786,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.0078,43.7612,45.7425,-0.2466,70,192.2,4,0,Exploracao visual normal,0.1734,0.1734,0.1734,0.0
-Varela,20,2,C,15.015015015015017,19.71971971971972,5.1112,Pupila,Pupila -> Steering -> Acelerador -> Freio,47.207,48.484,47.3315,1.277,58,153.8,11,0,Exploracao visual normal,0.8144,0.8144,0.8144,0.0
-Varela,20,3,C,26.426426426426428,31.93193193193193,5.9812,Freio,Freio -> Steering -> Acelerador -> Pupila,44.0226,42.7331,42.7409,-1.2895,55,192.2,5,0,Exploracao visual normal,0.83,0.83,0.0,0.8392
-Varela,20,4,C,39.83983983983984,42.64264264264264,3.045,Pupila,Pupila -> Acelerador -> Freio -> Steering,47.9154,46.7514,44.9545,-1.164,44,169.0,5,0,Exploracao visual normal,1.9753,1.4853,1.6953,0.0
-Varela,20,5,C,43.84384384384385,46.04604604604605,2.3925,Freio,Freio -> Acelerador -> Pupila -> Steering,44.8676,44.3864,44.5298,-0.4812,41,162.3,7,0,Exploracao visual normal,2.61,0.32,0.0,1.0286
-Varela,20,6,C,47.14714714714715,74.17417417417418,29.3622,Steering,Steering -> Acelerador -> Pupila -> Freio,44.7913,46.1047,48.4202,1.3134,172,164.8,37,0,Exploracao visual normal,0.0,0.24,1.37,1.0516
-Varela,20,7,C,74.97497497497498,79.87987987987988,5.3287,Steering,Steering -> Pupila -> Acelerador -> Freio,49.0207,45.6038,44.05,-3.4169,42,134.0,18,0,Busca visual dispersa (muitas fixacoes curtas),0.0,2.37,2.37,1.829
-Varela,20,8,C,81.38138138138139,83.18318318318319,1.9575,Acelerador,Acelerador -> Steering -> Pupila -> Freio,43.9275,44.4426,46.3175,0.515,33,107.6,19,0,Busca visual dispersa (muitas fixacoes curtas),0.15,0.0,2.76,0.2965
-Varela,20,9,C,85.28528528528528,87.4874874874875,2.3925,Pupila,Pupila -> Steering -> Acelerador -> Freio,46.7654,45.5684,47.1474,-1.197,39,140.6,13,0,Exploracao visual normal,2.0996,2.0996,2.0996,0.0
-Varela,20,10,C,88.2882882882883,90.5905905905906,2.5012,Pupila,Pupila -> Steering -> Acelerador -> Freio,46.897,47.7335,47.3342,0.8365,38,174.4,3,0,Exploracao visual normal,0.6243,0.7443,0.7443,0.0
-Varela,20,11,C,91.6916916916917,93.1931931931932,1.6312,Steering,Steering -> Pupila -> Acelerador -> Freio,47.0843,47.0386,47.4941,-0.0457,35,175.1,5,0,Exploracao visual normal,0.0,1.97,1.97,1.6311
+Humberto,1,1,C,2.802802802802803,10.810810810810812,8.0072,Freio,Freio -> Acelerador -> Pupila -> Steering,35.4253,35.2358,36.3883,-0.1895,65,184.8,4,0,Exploracao visual normal,0.85,0.05,0.0,0.8469
+Humberto,1,2,C,11.711711711711713,17.51751751751752,5.8052,Acelerador,Acelerador -> Steering -> Pupila -> Freio,36.3497,34.1505,31.5655,-2.1992,55,161.4,10,0,Exploracao visual normal,0.35,0.0,2.09,0.5009
+Humberto,1,3,C,26.926926926926928,36.83683683683684,9.9089,Freio,Freio -> Acelerador -> Pupila -> Steering,28.8922,29.7679,32.4479,0.8757,72,196.1,4,0,Exploracao visual normal,0.91,0.05,0.0,0.9068
+Humberto,1,4,C,39.23923923923924,72.47247247247248,33.2299,Pupila,Pupila -> Steering -> Acelerador -> Freio,32.1163,31.1468,32.8058,-0.9696,206,163.6,38,0,Exploracao visual normal,0.0261,0.0261,0.0261,0.0
+Humberto,1,5,C,73.67367367367368,79.87987987987988,6.2056,Steering,Steering -> Pupila -> Acelerador -> Freio,32.4642,28.6038,28.762,-3.8605,58,163.0,9,0,Exploracao visual normal,0.0,2.56,2.56,2.4813
+Humberto,1,6,C,81.68168168168168,83.08308308308308,1.4013,Steering,Steering -> Pupila -> Acelerador -> Freio,29.172,28.4498,28.6189,-0.7223,33,180.0,4,0,Exploracao visual normal,0.0,2.69,2.69,1.8595
+Humberto,1,7,C,84.38438438438439,88.4884884884885,4.1037,Pupila,Pupila -> Steering -> Acelerador -> Freio,28.211,29.3638,30.9245,1.1529,47,169.8,7,0,Exploracao visual normal,0.4779,0.4779,0.4779,0.0
+Humberto,2,1,B,58.45845845845846,59.55955955955956,1.1021,Acelerador,Acelerador -> Steering -> Pupila -> Freio,32.3474,31.5058,31.7865,-0.8417,33,159.5,7,0,Exploracao visual normal,1.11,0.0,2.27,2.2696
+Humberto,2,2,C,4.2042042042042045,16.616616616616618,12.4236,Freio,Freio -> Acelerador -> Steering -> Pupila,28.8059,32.1975,34.2295,3.3915,91,179.2,11,0,Exploracao visual normal,0.88,0.02,0.0,1.3996
+Humberto,2,3,C,26.826826826826828,35.93593593593594,9.1173,Pupila,Pupila -> Freio -> Acelerador -> Steering,31.0689,29.5761,32.7317,-1.4928,68,195.2,3,0,Exploracao visual normal,1.0115,0.0915,0.0415,0.0
+Humberto,2,4,C,39.43943943943944,60.06006006006007,20.6392,Pupila,Pupila -> Steering -> Acelerador -> Freio,33.927,32.5803,31.6941,-1.3467,141,163.4,24,0,Exploracao visual normal,0.5093,0.5093,0.5093,0.0
+Humberto,2,5,C,60.96096096096097,68.96896896896898,8.0152,Steering,Steering -> Acelerador -> Freio -> Pupila,31.6732,31.3021,31.1306,-0.3711,77,141.0,21,0,Exploracao visual normal,0.0,0.05,0.05,0.4606
+Humberto,2,6,C,69.96996996996998,80.48048048048048,10.52,Steering,Steering -> Pupila -> Acelerador -> Freio,31.1287,30.0847,30.2079,-1.044,85,157.9,16,0,Exploracao visual normal,0.0,1.85,1.85,0.9529
+Humberto,2,7,C,84.28428428428428,88.58858858858859,4.3082,Pupila,Pupila -> Steering -> Acelerador -> Freio,29.5012,29.9761,31.2993,0.4749,56,150.6,15,0,Exploracao visual normal,0.4873,0.4873,0.4873,0.0
+Rafa,1,1,B,67.06706706706707,68.46846846846847,1.3389,Acelerador,Acelerador -> Steering -> Pupila -> Freio,43.4824,41.5079,37.905,-1.9745,29,160.3,4,0,Exploracao visual normal,0.1,0.0,2.15,1.9852
+Rafa,1,2,C,3.503503503503504,11.611611611611613,7.7465,Freio,Freio -> Acelerador -> Pupila -> Steering,42.6185,43.2198,44.4738,0.6012,51,178.4,6,0,Exploracao visual normal,0.62,0.05,0.0,0.5709
+Rafa,1,3,C,13.013013013013014,16.316316316316318,3.156,Steering,Steering -> Pupila -> Acelerador -> Freio,44.0101,43.0153,43.2853,-0.9949,36,156.0,3,0,Exploracao visual normal,0.0,2.78,2.78,2.2155
+Rafa,1,4,C,17.117117117117118,17.91791791791792,0.7651,Steering,Steering -> Pupila -> Acelerador -> Freio,43.3427,43.8755,45.3109,0.5328,29,154.5,2,0,Exploracao visual normal,0.0,0.52,0.52,0.3927
+Rafa,1,5,C,22.522522522522525,25.025025025025027,2.3909,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.1691,43.1459,43.4682,-0.0232,46,131.4,15,0,Exploracao visual normal,1.3441,1.3441,1.3441,0.0
+Rafa,1,6,C,26.426426426426428,30.73073073073073,4.1123,Pupila,Pupila -> Freio -> Acelerador -> Steering,42.6462,41.085,39.5647,-1.5612,51,157.1,13,0,Exploracao visual normal,0.6857,0.3157,0.2757,0.0
+Rafa,1,7,C,35.33533533533534,42.54254254254254,6.8858,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.0047,44.937,42.8089,1.9323,64,160.5,15,0,Exploracao visual normal,2.9903,2.9903,2.9903,0.0
+Rafa,1,8,C,44.44444444444445,53.75375375375376,8.8941,Steering,Steering -> Pupila -> Acelerador -> Freio,43.5745,40.5073,42.2163,-3.0672,71,155.7,14,0,Exploracao visual normal,0.0,2.51,2.56,2.216
+Rafa,1,9,C,54.95495495495496,57.35735735735736,2.2953,Steering,Steering -> Acelerador -> Pupila -> Freio,42.4265,42.2849,42.7047,-0.1416,35,171.8,3,0,Exploracao visual normal,0.0,0.31,2.62,2.6198
+Rafa,1,10,C,58.25825825825826,60.16016016016017,1.8171,Steering,Steering -> Pupila -> Acelerador -> Freio,42.3159,45.4243,43.1027,3.1084,31,148.9,5,0,Exploracao visual normal,0.0,2.61,2.61,2.1359
+Rafa,1,11,C,61.36136136136137,79.97997997997999,17.7882,Steering,Steering -> Freio -> Acelerador -> Pupila,42.3384,41.2303,37.635,-1.1081,106,152.3,23,0,Exploracao visual normal,0.0,2.02,1.99,2.1573
+Rafa,2,1,A,62.26226226226227,63.16316316316317,0.8679,Pupila,Pupila -> Freio -> Acelerador -> Steering,46.0542,42.9406,43.6515,-3.1136,35,122.8,13,0,Exploracao visual normal,2.3406,1.7406,1.7206,0.0
+Rafa,2,2,C,3.4034034034034035,14.314314314314316,10.5116,Freio,Freio -> Acelerador -> Pupila -> Steering,37.9996,40.7589,44.8784,2.7593,76,187.5,6,0,Exploracao visual normal,0.67,0.05,0.0,0.4729
+Rafa,2,3,C,18.31831831831832,19.21921921921922,0.8679,Steering,Steering -> Pupila -> Acelerador -> Freio,45.9648,46.2948,44.9347,0.3299,34,144.9,9,0,Exploracao visual normal,0.0,1.2,1.2,0.6034
+Rafa,2,4,C,21.921921921921925,25.825825825825827,3.761,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.0296,39.8907,40.4327,-4.1388,49,148.3,13,0,Exploracao visual normal,0.6057,0.6057,0.6057,0.0
+Rafa,2,5,C,27.027027027027028,33.933933933933936,6.6541,Pupila,Pupila -> Freio -> Acelerador -> Steering,40.0037,39.6348,42.7178,-0.3689,55,166.3,14,0,Exploracao visual normal,0.6856,0.4656,0.4156,0.0
+Rafa,2,6,C,40.84084084084084,60.06006006006007,18.5158,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.5458,45.2098,48.0567,0.6641,124,147.0,37,0,Exploracao visual normal,0.0253,0.0253,0.0253,0.0
+Rafa,2,7,C,61.06106106106107,79.47947947947948,17.7443,Steering,Steering -> Acelerador -> Freio -> Pupila,48.2504,42.3939,39.9648,-5.8565,129,143.3,37,0,Exploracao visual normal,0.0,2.14,2.14,2.145
+Rafa,2,8,C,85.08508508508508,87.2872872872873,2.1216,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.1604,44.8523,44.9735,1.6919,42,156.0,13,0,Exploracao visual normal,2.9964,2.9964,2.9964,0.0
+Rafa,3,1,B,67.06706706706707,68.46846846846847,1.3284,Steering,Steering -> Acelerador -> Pupila -> Freio,39.8273,40.3907,34.9463,0.5633,29,167.7,3,0,Exploracao visual normal,0.0,0.06,2.52,2.5187
+Rafa,3,2,C,3.2032032032032034,15.115115115115117,11.2913,Freio,Freio -> Acelerador -> Pupila -> Steering,36.374,41.3699,45.6312,4.9959,77,180.4,11,0,Exploracao visual normal,0.47,0.04,0.0,0.4238
+Rafa,3,3,C,26.526526526526528,34.93493493493494,7.9703,Pupila,Pupila -> Freio -> Acelerador -> Steering,41.9633,40.3403,46.9255,-1.623,63,181.6,8,0,Exploracao visual normal,0.7425,0.5525,0.5125,0.0
+Rafa,3,4,C,40.24024024024024,58.95895895895896,17.7435,Pupila,Pupila -> Steering -> Acelerador -> Freio,50.5447,42.9724,43.6401,-7.5724,119,157.1,29,0,Exploracao visual normal,2.5497,2.5497,2.5497,0.0
+Rafa,3,5,C,59.75975975975976,68.76876876876878,8.5396,Steering,Steering -> Pupila -> Acelerador -> Freio,43.8607,39.9157,36.9962,-3.945,66,168.3,10,0,Exploracao visual normal,0.0,2.25,2.25,0.0443
+Rafa,3,6,C,69.86986986986987,78.67867867867868,8.3499,Steering,Steering -> Pupila -> Acelerador -> Freio,37.011,42.1882,32.4574,5.1773,69,153.1,15,0,Exploracao visual normal,0.0,1.91,1.91,0.6838
+Rafa,3,7,C,86.18618618618619,87.8878878878879,1.613,Pupila,Pupila -> Steering -> Acelerador -> Freio,40.3598,42.4288,42.3238,2.069,35,169.4,3,0,Exploracao visual normal,2.843,2.993,2.993,0.0
+Rafa,4,1,B,67.06706706706707,68.46846846846847,1.3368,Acelerador,Acelerador -> Steering -> Pupila -> Freio,43.4241,43.5795,42.6928,0.1554,32,170.3,7,0,Exploracao visual normal,0.3,0.0,2.68,0.3663
+Rafa,4,2,C,3.3033033033033035,12.012012012012011,8.3072,Freio,Freio -> Acelerador -> Pupila -> Steering,35.6907,38.2753,41.0257,2.5846,61,200.1,3,0,Exploracao visual normal,0.41,0.03,0.0,0.2162
+Rafa,4,3,C,13.913913913913914,15.415415415415415,1.4323,Pupila,Pupila -> Steering -> Acelerador -> Freio,41.1761,43.2936,42.3931,2.1174,32,191.8,2,0,Exploracao visual normal,0.7152,0.8252,0.8252,0.0
+Rafa,4,4,C,27.127127127127128,33.133133133133136,5.7291,Freio,Freio -> Acelerador -> Steering -> Pupila,37.5501,39.3367,38.6633,1.7865,50,192.5,3,0,Exploracao visual normal,0.47,0.05,0.0,0.4728
+Rafa,4,5,C,34.134134134134136,36.83683683683684,2.5781,Pupila,Pupila -> Steering -> Acelerador -> Freio,38.747,39.4878,42.3193,0.7409,40,170.8,7,0,Exploracao visual normal,0.6604,0.7304,0.7304,0.0
+Rafa,4,6,C,40.64064064064064,67.16716716716716,25.3037,Pupila,Pupila -> Steering -> Acelerador -> Freio,39.705,41.5513,43.5658,1.8463,152,167.7,25,0,Exploracao visual normal,0.0839,0.0839,0.0839,0.0
+Rafa,4,7,C,68.06806806806807,72.37237237237238,4.1059,Steering,Steering -> Acelerador -> Pupila -> Freio,43.5688,43.0863,44.3762,-0.4825,48,173.4,9,0,Exploracao visual normal,0.0,0.0,2.64,0.5794
+Rafa,4,8,C,73.17317317317318,80.38038038038039,6.875,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.6745,39.3999,37.227,-5.2746,59,167.3,9,0,Exploracao visual normal,0.595,2.435,2.435,0.0
+Rafa,4,9,C,85.58558558558559,87.18718718718719,1.5278,Pupila,Pupila -> Steering -> Acelerador -> Freio,40.4655,40.7865,42.0431,0.321,40,149.1,11,0,Exploracao visual normal,0.0016,0.0016,0.0016,0.0
+Rafa,5,1,B,67.16716716716716,68.46846846846847,1.2433,Steering,Steering -> Pupila -> Acelerador -> Freio,37.308,37.1102,41.7413,-0.1978,31,145.2,8,0,Exploracao visual normal,0.0,2.47,2.47,2.0411
+Rafa,5,2,B,85.58558558558559,86.38638638638639,0.7651,Pupila,Pupila -> Steering -> Acelerador -> Freio,38.6334,39.4061,41.0117,0.7727,29,175.8,4,0,Exploracao visual normal,1.1841,1.2841,1.2841,0.0
+Rafa,5,3,C,3.1031031031031038,17.31731731731732,13.5803,Freio,Freio -> Acelerador -> Pupila -> Steering,38.0868,39.7056,46.2689,1.6188,90,186.6,12,0,Exploracao visual normal,0.39,0.04,0.0,0.2437
+Rafa,5,4,C,18.61861861861862,19.91991991991992,1.2433,Steering,Steering -> Pupila -> Acelerador -> Freio,46.5352,46.9318,45.5074,0.3966,33,152.0,9,0,Exploracao visual normal,0.0,1.42,1.42,0.019
+Rafa,5,5,C,26.126126126126128,34.73473473473474,8.2247,Pupila,Pupila -> Steering -> Acelerador -> Freio,40.7319,38.1583,39.0716,-2.5736,62,192.3,4,0,Exploracao visual normal,2.9969,2.9969,2.9969,0.0
+Rafa,5,6,C,40.54054054054054,54.55455455455456,13.389,Pupila,Pupila -> Steering -> Acelerador -> Freio,46.6314,42.4951,44.1201,-4.1362,94,162.7,21,0,Exploracao visual normal,2.0246,2.0946,2.0946,0.0
+Rafa,5,7,C,55.55555555555556,67.36736736736736,11.285,Steering,Steering -> Acelerador -> Freio -> Pupila,44.0634,40.4221,35.9882,-3.6412,80,156.0,18,0,Exploracao visual normal,0.0,2.39,2.69,2.6949
+Rafa,5,8,C,68.26826826826827,80.08008008008008,11.285,Steering,Steering -> Pupila -> Acelerador -> Freio,35.682,39.3645,35.1337,3.6825,83,165.4,15,0,Exploracao visual normal,0.0,2.5,2.5,0.0702
+Rafa,5,9,C,84.68468468468468,87.8878878878879,3.0603,Pupila,Pupila -> Steering -> Acelerador -> Freio,38.2319,40.0282,35.5416,1.7963,40,172.3,6,0,Exploracao visual normal,0.2582,0.2582,0.2582,0.0
+Varela,1,1,A,49.14914914914915,54.15415415415416,6.526,Acelerador,Acelerador -> Steering -> Freio -> Pupila,45.1669,43.778,40.7687,-1.3889,66,148.4,13,0,Exploracao visual normal,0.08,0.0,0.87,1.5605
+Varela,1,2,A,55.75575575575576,58.35835835835836,3.3935,Steering,Steering -> Pupila -> Acelerador -> Freio,43.5774,46.1066,47.3446,2.5292,46,160.3,6,0,Exploracao visual normal,0.0,2.37,2.37,2.0721
+Varela,1,3,A,61.96196196196197,63.26326326326327,1.6968,Pupila,Pupila -> Steering -> Acelerador -> Freio,42.8535,44.065,47.9719,1.2115,33,125.1,14,0,Busca visual dispersa (muitas fixacoes curtas),0.6959,2.4359,2.4359,0.0
+Varela,1,4,A,69.66966966966967,70.87087087087087,1.5662,Pupila,Pupila -> Freio -> Acelerador -> Steering,50.696,47.6069,47.4699,-3.0891,31,156.3,7,0,Exploracao visual normal,2.3694,1.1394,0.9394,0.0
+Varela,1,5,B,2.6026026026026026,3.4034034034034035,1.0442,Pupila,Pupila -> Acelerador -> Freio -> Steering,51.1307,51.2698,49.7794,0.1391,30,181.6,4,0,Exploracao visual normal,1.8601,1.5801,1.8501,0.0
+Varela,1,6,B,23.92392392392393,27.127127127127128,4.1767,Freio,Freio -> Pupila -> Steering -> Acelerador,43.1032,47.2736,47.6081,4.1704,46,182.8,7,0,Exploracao visual normal,1.48,1.64,0.0,0.941
+Varela,1,7,B,37.13713713713714,40.64064064064064,4.5682,Freio,Freio -> Steering -> Acelerador -> Pupila,44.7345,45.946,44.146,1.2115,46,198.1,2,0,Exploracao visual normal,0.39,0.58,0.0,0.8479
+Varela,1,8,B,47.44744744744745,48.34834834834835,1.1747,Steering,Steering -> Acelerador -> Pupila -> Freio,46.0963,44.2577,45.2334,-1.8386,38,140.7,8,0,Exploracao visual normal,0.0,0.92,1.17,1.1687
+Varela,1,9,B,58.45845845845846,59.55955955955956,1.4357,Steering,Steering -> Acelerador -> Pupila -> Freio,46.2291,47.4587,45.0395,1.2296,32,158.1,7,0,Exploracao visual normal,0.0,0.11,0.66,0.654
+Varela,1,10,B,67.36736736736736,68.46846846846847,1.4357,Acelerador,Acelerador -> Pupila -> Steering -> Freio,46.3025,47.6507,50.5097,1.3482,31,168.5,6,0,Exploracao visual normal,0.84,0.0,0.84,0.4657
+Varela,1,11,B,73.57357357357358,75.77577577577578,2.8715,Steering,Steering -> Acelerador -> Pupila -> Freio,46.4363,44.5697,42.6152,-1.8666,42,154.2,12,0,Exploracao visual normal,0.0,0.51,1.94,1.9353
+Varela,1,12,B,82.58258258258259,83.48348348348348,1.1747,Freio,Freio -> Steering -> Pupila -> Acelerador,42.3548,43.1251,41.4538,0.7703,32,151.1,11,0,Exploracao visual normal,1.13,2.38,0.0,1.8281
+Varela,1,13,B,84.38438438438439,85.38538538538539,1.3052,Acelerador,Acelerador -> Steering -> Freio -> Pupila,41.6064,43.1446,43.3854,1.5382,36,145.0,15,0,Busca visual dispersa (muitas fixacoes curtas),0.51,0.0,2.63,2.6385
+Varela,1,14,B,89.98998998999,91.4914914914915,1.9578,Steering,Steering -> Pupila -> Acelerador -> Freio,42.0847,42.1162,44.3365,0.0315,37,170.8,5,0,Exploracao visual normal,0.0,0.68,0.68,0.5403
+Varela,1,15,C,1.901901901901902,10.810810810810812,11.6163,Pupila,Pupila -> Steering -> Acelerador -> Freio,50.3316,50.6909,51.1104,0.3593,81,185.4,7,0,Exploracao visual normal,0.6363,0.6363,0.6363,0.0
+Varela,1,16,C,13.413413413413414,16.516516516516518,4.0461,Pupila,Pupila -> Steering -> Acelerador -> Freio,50.7662,47.4742,45.0446,-3.292,42,173.1,6,0,Exploracao visual normal,0.1423,0.1423,0.1423,0.0
+Varela,1,17,C,22.322322322322325,31.631631631631635,12.1384,Acelerador,Acelerador -> Pupila -> Steering -> Freio,43.5508,47.2221,46.4491,3.6714,84,181.4,10,0,Exploracao visual normal,2.35,0.0,2.35,2.3496
+Varela,1,18,C,32.632632632632635,33.933933933933936,1.6968,Steering,Steering -> Pupila -> Acelerador -> Freio,46.2458,45.6102,45.3291,-0.6356,33,185.9,4,0,Exploracao visual normal,0.0,1.83,1.83,0.514
+Varela,1,19,C,35.73573573573574,56.25625625625626,26.7567,Acelerador,Acelerador -> Freio -> Steering -> Pupila,46.0114,44.4988,46.3266,-1.5126,172,166.1,26,0,Exploracao visual normal,1.39,0.0,0.22,1.3947
+Varela,1,20,C,57.95795795795796,84.48448448448448,34.5879,Steering,Steering -> Acelerador -> Pupila -> Freio,45.3126,44.8514,43.0863,-0.4612,199,149.7,58,0,Exploracao visual normal,0.0,0.32,2.78,2.7746
+Varela,1,21,C,87.8878878878879,88.78878878878879,1.1747,Pupila,Pupila -> Steering -> Acelerador -> Freio,43.993,43.0687,41.9415,-0.9243,33,153.9,9,0,Exploracao visual normal,0.2111,0.2111,0.2111,0.0
+Varela,1,22,C,90.5905905905906,92.7927927927928,2.8715,Pupila,Pupila -> Steering -> Acelerador -> Freio,42.0265,43.236,43.4689,1.2095,41,171.4,5,0,Exploracao visual normal,0.2882,0.2982,0.2982,0.0
+Varela,2,1,C,2.2022022022022023,11.111111111111112,9.6786,Pupila,Pupila -> Steering -> Acelerador -> Freio,44.0078,43.7612,45.7425,-0.2466,70,192.2,4,0,Exploracao visual normal,0.1734,0.1734,0.1734,0.0
+Varela,2,2,C,15.015015015015017,19.71971971971972,5.1112,Pupila,Pupila -> Steering -> Acelerador -> Freio,47.207,48.484,47.3315,1.277,58,153.8,11,0,Exploracao visual normal,0.8144,0.8144,0.8144,0.0
+Varela,2,3,C,26.426426426426428,31.93193193193193,5.9812,Freio,Freio -> Steering -> Acelerador -> Pupila,44.0226,42.7331,42.7409,-1.2895,55,192.2,5,0,Exploracao visual normal,0.83,0.83,0.0,0.8392
+Varela,2,4,C,39.83983983983984,42.64264264264264,3.045,Pupila,Pupila -> Acelerador -> Freio -> Steering,47.9154,46.7514,44.9545,-1.164,44,169.0,5,0,Exploracao visual normal,1.9753,1.4853,1.6953,0.0
+Varela,2,5,C,43.84384384384385,46.04604604604605,2.3925,Freio,Freio -> Acelerador -> Pupila -> Steering,44.8676,44.3864,44.5298,-0.4812,41,162.3,7,0,Exploracao visual normal,2.61,0.32,0.0,1.0286
+Varela,2,6,C,47.14714714714715,74.17417417417418,29.3622,Steering,Steering -> Acelerador -> Pupila -> Freio,44.7913,46.1047,48.4202,1.3134,172,164.8,37,0,Exploracao visual normal,0.0,0.24,1.37,1.0516
+Varela,2,7,C,74.97497497497498,79.87987987987988,5.3287,Steering,Steering -> Pupila -> Acelerador -> Freio,49.0207,45.6038,44.05,-3.4169,42,134.0,18,0,Busca visual dispersa (muitas fixacoes curtas),0.0,2.37,2.37,1.829
+Varela,2,8,C,81.38138138138139,83.18318318318319,1.9575,Acelerador,Acelerador -> Steering -> Pupila -> Freio,43.9275,44.4426,46.3175,0.515,33,107.6,19,0,Busca visual dispersa (muitas fixacoes curtas),0.15,0.0,2.76,0.2965
+Varela,2,9,C,85.28528528528528,87.4874874874875,2.3925,Pupila,Pupila -> Steering -> Acelerador -> Freio,46.7654,45.5684,47.1474,-1.197,39,140.6,13,0,Exploracao visual normal,2.0996,2.0996,2.0996,0.0
+Varela,2,10,C,88.2882882882883,90.5905905905906,2.5012,Pupila,Pupila -> Steering -> Acelerador -> Freio,46.897,47.7335,47.3342,0.8365,38,174.4,3,0,Exploracao visual normal,0.6243,0.7443,0.7443,0.0
+Varela,2,11,C,91.6916916916917,93.1931931931932,1.6312,Steering,Steering -> Pupila -> Acelerador -> Freio,47.0843,47.0386,47.4941,-0.0457,35,175.1,5,0,Exploracao visual normal,0.0,1.97,1.97,1.6311

@@ -1254,9 +1254,15 @@ def executar():
 
     for nome in df_anom["piloto"].unique():
         df_anom_piloto = df_anom[df_anom["piloto"] == nome].reset_index(drop=True)
+        df_anom_piloto = df_anom_piloto[df_anom_piloto["volta_num"] != 0].reset_index(drop=True)
+        voltas_ordenadas = sorted(df_anom_piloto["volta_num"].unique())
+        mapa_voltas = {v: i + 1 for i, v in enumerate(voltas_ordenadas)}
         print(f"\n{'=' * 60}")
         print(f"   CARREGANDO: {nome.upper()} ({len(df_anom_piloto)} anomalia(s))")
         print(f"{'=' * 60}")
+        if df_anom_piloto.empty:
+            print(f"  Nenhuma anomalia apos remover Volta 0 para {nome} - pulando")
+            continue
 
         caminhos = PILOTOS[nome]
         pasta_piloto = Path(caminhos["pupila"]).parent
@@ -1346,7 +1352,7 @@ def executar():
             if vn not in seen_v:
                 seen_v.add(vn)
                 lista_voltas_unicas.append({
-                    "volta_num": vn,
+                    "volta_num": mapa_voltas[vn],
                     "t_ini": float(row["t_ini_volta"]),
                     "t_fim": float(row["t_fim_volta"]),
                 })
@@ -1367,7 +1373,8 @@ def executar():
         lista_anomalias_piloto = []
 
         for _, row in df_anom_piloto.iterrows():
-            volta_num = int(row["volta_num"])
+            volta_num_orig = int(row["volta_num"])
+            volta_num = mapa_voltas[volta_num_orig]
             anom_num = int(row["anom_num"])
             tipo = row["tipo"]
             ini_pct = row["ini_pct"]
