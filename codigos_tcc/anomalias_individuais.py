@@ -44,6 +44,8 @@ from codigos_tcc.configuracao import (
 
 # ── Parâmetros ─────────────────────────────────────────────────────────────────
 PASTA_SAIDA_PDF = GRAFICOS_TR_DIR
+PASTA_SAIDA_CSV_IND = GRAFICOS_TR_DIR
+ARQUIVO_BASE_ANOVA = GRAFICOS_TR_DIR.parent / "base_consolidada_anova.csv"
 JANELA_REACAO_SEG = 3.0
 JANELA_POS_ANOMALIA_SEG = 2.0
 LIMIAR_ONSET_PUPILA_MM = 0.5
@@ -138,6 +140,74 @@ def _fmt(v, sufixo=""):
 
 # ── Carregamento Pupil Labs ────────────────────────────────────────────────────
 
+def inferir_contexto_pista(tipo: str, s_window) -> str:
+    if tipo == "A":
+        return "Curva"
+    if tipo == "B":
+        return "Reta"
+    if s_window is not None and len(s_window) > 0:
+        return "Curva" if np.nanmean(np.abs(s_window)) > 15.0 else "Reta"
+    return "Indefinido"
+
+
+_COLUNAS_ANOVA = {
+    # Identificação e contexto
+    "t_anom_ini":                "Timestamp",
+    "piloto":                    "ID_Piloto",
+    "volta_num":                 "Volta",
+    "tipo":                      "Tipo_Anomalia",
+    "contexto_pista":            "Contexto_Pista",
+    "duracao_anom":              "Duracao_Anomalia_s",
+    # Dimensões da pupila (Goals 3 e 4)
+    "diam_antes_mm":             "Diam_Antes_mm",
+    "diam_durante_mm":           "Diam_Durante_mm",
+    "diam_depois_mm":            "Diam_Depois_mm",
+    "delta_diam_mm":             "Delta_Diam_mm",
+    "tipo_resposta_pupilar":     "Tipo_Resposta_Pupilar",
+    # Tempos de reação (Goals 1 e 2)
+    "TR_pupila_s":               "TR_Pupila_s",
+    "TR_steering_s":             "TR_Steering_s",
+    "TR_acelerador_s":           "TR_Acelerador_s",
+    "TR_freio_s":                "TR_Freio_s",
+    "primeiro_sinal":            "Primeiro_Sinal",
+    # Picos de esforço cognitivo (Goal 5)
+    "n_picos_cognitivos_janela": "N_Picos_Cognitivos",
+    "intensidade_media_picos":   "Intensidade_Media_Picos",
+    # Métricas de fixação (co-variáveis comportamentais)
+    "n_fixacoes_janela":         "N_Fixacoes",
+    "dur_media_fix_ms":          "Dur_Media_Fixacao_ms",
+    "fix_curtas":                "Fix_Curtas",
+    "fix_longas":                "Fix_Longas",
+    "comportamento_visual":      "Comportamento_Visual",
+    # Novas métricas para ANOVA
+    "tempo_reacao_pupilar_s":       "Tempo_Reacao_Pupilar_s",
+    "media_tamanho_pupilar":        "Media_Tamanho_Pupilar",
+    "crescimento_pupilar_derivada": "Crescimento_Pupilar_Derivada",
+    "tempo_no_escuro_s":            "Tempo_No_Escuro_s",
+    "distancia_no_escuro_m":        "Distancia_No_Escuro_m",
+}
+
+
+def salvar_csv_individual(nome: str, todos_registros: list, pasta) -> str:
+    registros_piloto = [r for r in todos_registros if r.get("piloto") == nome]
+    if not registros_piloto:
+        return ""
+    df_fonte = pd.DataFrame(registros_piloto)
+    colunas_presentes = {k: v for k, v in _COLUNAS_ANOVA.items() if k in df_fonte.columns}
+    df = df_fonte[list(colunas_presentes.keys())].rename(columns=colunas_presentes)
+    caminho = str(Path(pasta) / f"CSV_{nome}.csv")
+    df.to_csv(caminho, index=False, encoding="utf-8")
+    print(f"  CSV individual salvo: {caminho}")
+    return caminho
+
+
+def consolidar_csvs_anova(caminhos_csv: list, arquivo_saida) -> None:
+    dfs = [pd.read_csv(str(p)) for p in caminhos_csv if p and Path(p).exists()]
+    if dfs:
+        pd.concat(dfs, ignore_index=True).to_csv(str(arquivo_saida), index=False, encoding="utf-8")
+        print(f"\nBase consolidada ANOVA salva: {arquivo_saida}")
+
+
 def carregar_world_timestamps(caminho_wt):
     """Load world_timestamps.csv → DataFrame(ts_s, frame_idx)."""
     try:
@@ -196,6 +266,39 @@ def carregar_fixacoes(caminho_fix, t_sync_p, escala):
     except Exception as exc:
         print(f"  Aviso fixations: {exc}")
         return pd.DataFrame(columns=["t_sync", "duration_ms", "norm_x", "norm_y", "confidence", "dispersion"])
+
+
+def carregar_blinks(caminho_blinks, t_sync_p, escala):
+    """Load blinks.csv, sync timestamps → DataFrame(t_ini, t_fim, duracao_s, confidence)."""
+    try:
+        df = pd.read_csv(str(caminho_blinks), sep=None, engine="python", on_bad_lines="skip")
+        df.columns = [str(c).strip() for c in df.columns]
+        col_ini = next((c for c in df.columns if "start_timestamp" in c.lower()), None)
+        col_fim = next((c for c in df.columns if "end_timestamp" in c.lower()), None)
+        col_dur = next((c for c in df.columns if "duration" in c.lower()), None)
+        col_conf = next((c for c in df.columns if "confidence" in c.lower()), None)
+        if col_ini is None:
+            print("  Aviso: coluna start_timestamp ausente em blinks.csv")
+            return pd.DataFrame(columns=["t_ini", "t_fim", "duracao_s", "confidence"])
+        ts_ini = pd.to_numeric(df[col_ini].astype(str).str.replace(",", ".", regex=False), errors="coerce")
+        out = pd.DataFrame()
+        out["t_ini"] = (ts_ini - t_sync_p) / escala
+        if col_fim is not None:
+            ts_fim = pd.to_numeric(df[col_fim].astype(str).str.replace(",", ".", regex=False), errors="coerce")
+            out["t_fim"] = (ts_fim - t_sync_p) / escala
+        elif col_dur is not None:
+            dur_raw = pd.to_numeric(df[col_dur].astype(str).str.replace(",", ".", regex=False), errors="coerce")
+            med = dur_raw.dropna().median()
+            dur_s = dur_raw / 1000.0 if (not np.isnan(med) and med > 10) else dur_raw
+            out["t_fim"] = out["t_ini"] + dur_s
+        else:
+            out["t_fim"] = out["t_ini"] + 0.3
+        out["duracao_s"] = out["t_fim"] - out["t_ini"]
+        out["confidence"] = pd.to_numeric(df[col_conf], errors="coerce") if col_conf else np.nan
+        return out.dropna(subset=["t_ini"]).reset_index(drop=True)
+    except Exception as exc:
+        print(f"  Aviso blinks: {exc}")
+        return pd.DataFrame(columns=["t_ini", "t_fim", "duracao_s", "confidence"])
 
 
 # ── Análise de fixações ────────────────────────────────────────────────────────
@@ -547,6 +650,44 @@ def detectar_picos_pupila(t_pupila, diam_pupila, janela=15):
         if d == janela_local.max():
             picos.append((float(t_pupila[i]), float(d)))
     return picos
+
+
+def calcular_crescimento_pupilar_derivada(t_pupila, diam_pupila, t_ini, t_fim):
+    """Return max positive derivative (mm/s) of the pupil signal during the anomaly window."""
+    mask = (t_pupila >= t_ini) & (t_pupila <= t_fim)
+    if mask.sum() < 3:
+        return np.nan
+    t_seg = t_pupila[mask]
+    d_seg = diam_pupila[mask]
+    dt = np.diff(t_seg)
+    dt[dt == 0] = np.nan
+    derivadas = np.diff(d_seg) / dt
+    valid = derivadas[~np.isnan(derivadas)]
+    if len(valid) == 0:
+        return np.nan
+    return float(np.nanmax(valid))
+
+
+def calcular_metricas_blinks(df_blinks, t_jan_ini, t_jan_fim, t_motec, vel_ms):
+    """Return (tempo_total_s, distancia_total_m) for blinks overlapping the analysis window."""
+    if df_blinks.empty:
+        return np.nan, np.nan
+    mask = (df_blinks["t_ini"] < t_jan_fim) & (df_blinks["t_fim"] > t_jan_ini)
+    blinks_janela = df_blinks[mask]
+    if blinks_janela.empty:
+        return 0.0, 0.0
+    tempo_total = 0.0
+    distancia_total = 0.0
+    vel_disponivel = vel_ms is not None and not np.all(np.isnan(vel_ms))
+    for _, blink in blinks_janela.iterrows():
+        b_ini = max(blink["t_ini"], t_jan_ini)
+        b_fim = min(blink["t_fim"], t_jan_fim)
+        tempo_total += b_fim - b_ini
+        if vel_disponivel:
+            mask_v = (t_motec >= b_ini) & (t_motec <= b_fim)
+            if mask_v.sum() >= 2:
+                distancia_total += float(np.trapz(vel_ms[mask_v], t_motec[mask_v]))
+    return round(tempo_total, 4), round(distancia_total, 4)
 
 
 def calcular_perfil_pupilar_por_setor(t_pupila, diam_pupila, t_ini_volta, t_fim_volta):
@@ -1251,6 +1392,7 @@ def executar():
 
     pdfs_gerados = []
     registros_csv = []
+    csvs_individuais = []
 
     for nome in df_anom["piloto"].unique():
         df_anom_piloto = df_anom[df_anom["piloto"] == nome].reset_index(drop=True)
@@ -1322,6 +1464,10 @@ def executar():
         df_fix_sync = carregar_fixacoes(caminho_fixacoes, t_sync_p, escala)
         print(f"  Fixacoes carregadas: {len(df_fix_sync)}")
 
+        caminho_blinks = pasta_piloto / "blinks.csv"
+        df_blinks = carregar_blinks(caminho_blinks, t_sync_p, escala)
+        print(f"  Blinks carregados: {len(df_blinks)}")
+
         if caminho_world_ts.exists():
             df_wt = carregar_world_timestamps(caminho_world_ts)
             print(f"  World timestamps: {len(df_wt)} frames")
@@ -1337,12 +1483,15 @@ def executar():
         df_m["steer"] = clean_col(df_m, ["Steering Angle"])
         df_m["acel"] = clean_col(df_m, ["Throttle Pos"])
         df_m["freio"] = clean_col(df_m, ["Brake Pos"])
+        _vel_serie = clean_col(df_m, ["Ground Speed", "GPS Speed", "Vehicle Speed", "Speed"])
+        df_m["vel"] = _vel_serie / 3.6 if _vel_serie is not None else np.nan
         df_m = df_m.dropna(subset=["t_sync"])
 
         t_motec = df_m["t_sync"].values
         steer_raw = df_m["steer"].values
         acel_raw = df_m["acel"].values
         freio_raw = df_m["freio"].values
+        vel_raw = df_m["vel"].values
 
         # Voltas únicas presentes nas anomalias
         lista_voltas_unicas = []
@@ -1449,6 +1598,46 @@ def executar():
             stats_fix = estatisticas_fixacao(df_fix_janela)
             comportamento_fix = classificar_comportamento_fixacao(stats_fix)
 
+            # Picos cognitivos na janela desta anomalia
+            picos_jan = [(t, d) for (t, d) in picos_cognitivos if t_jan_ini <= t <= t_jan_fim]
+            n_picos_jan = len(picos_jan)
+            intensidade_picos = (
+                round(float(np.mean([d for _, d in picos_jan])), 4) if picos_jan else 0.0
+            )
+
+            # Tempo de reação pupilar absoluto (onset pupila - início da anomalia)
+            tr_pupilar = (
+                round(float(onset_pupil - t_anom_ini), 4)
+                if onset_pupil is not None
+                else ""
+            )
+
+            # Média do tamanho pupilar na janela de análise
+            media_pup = (
+                round(float(np.nanmean(d_jan)), 4)
+                if len(d_jan) > 0 and not np.all(np.isnan(d_jan))
+                else ""
+            )
+
+            # Crescimento máximo da pupila (derivada) durante a anomalia
+            _cresc = calcular_crescimento_pupilar_derivada(t_pupila, diam_pupila, t_anom_ini, t_anom_fim)
+            cresc_derivada = round(_cresc, 4) if not np.isnan(_cresc) else ""
+
+            # Blinks: tempo e distância "no escuro" na janela da anomalia
+            tempo_escuro, dist_escuro = calcular_metricas_blinks(
+                df_blinks, t_jan_ini, t_jan_fim, t_motec, vel_raw
+            )
+
+            # Direção da resposta pupilar
+            if np.isnan(delta_d):
+                tipo_resp_pupilar = ""
+            elif delta_d > 0.2:
+                tipo_resp_pupilar = "Dilatacao"
+            elif delta_d < -0.2:
+                tipo_resp_pupilar = "Contracao"
+            else:
+                tipo_resp_pupilar = "Estavel"
+
             # Tempos de reação relativos ao primeiro sinal
             trs = {}
             if t_primeiro is not None:
@@ -1512,6 +1701,16 @@ def executar():
                 "fix_curtas": stats_fix["n_curtas"],
                 "fix_longas": stats_fix["n_longas"],
                 "comportamento_visual": comportamento_fix,
+                "t_anom_ini": round(t_anom_ini, 4),
+                "contexto_pista": inferir_contexto_pista(tipo, s_jan),
+                "tipo_resposta_pupilar": tipo_resp_pupilar,
+                "n_picos_cognitivos_janela": n_picos_jan,
+                "intensidade_media_picos": intensidade_picos,
+                "tempo_reacao_pupilar_s": tr_pupilar,
+                "media_tamanho_pupilar": media_pup,
+                "crescimento_pupilar_derivada": cresc_derivada,
+                "tempo_no_escuro_s": tempo_escuro,
+                "distancia_no_escuro_m": dist_escuro,
                 **{k: v for k, v in trs.items()},
             })
 
@@ -1534,14 +1733,19 @@ def executar():
                 lista_voltas_unicas,
             )
             pdfs_gerados.append(caminho_pdf)
+            caminho_csv_ind = salvar_csv_individual(nome, registros_csv, PASTA_SAIDA_CSV_IND)
+            csvs_individuais.append(caminho_csv_ind)
         else:
             print(f"  Nenhuma anomalia com dados suficientes para {nome} - PDF nao gerado")
 
-    # Exportar CSV consolidado
+    # Exportar CSV consolidado (relatorio_TR original — sem alteração nas colunas)
     if registros_csv:
         df_csv = pd.DataFrame(registros_csv)
         df_csv.to_csv(str(ARQUIVO_RELATORIO_TR), index=False, encoding="utf-8")
         print(f"\nRelatorio CSV salvo: {ARQUIVO_RELATORIO_TR}")
+
+    # Exportar base consolidada para ANOVA
+    consolidar_csvs_anova(csvs_individuais, ARQUIVO_BASE_ANOVA)
 
     print(f"\n{'=' * 60}")
     print(f"PDFs gerados: {len(pdfs_gerados)}")
