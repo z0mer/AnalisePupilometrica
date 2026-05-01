@@ -74,12 +74,14 @@ def clean_col(df, name_list):
 
 def interpolar_volta(valores, n_pontos):
     n = int(n_pontos)
-    mask_valido = ~np.isnan(valores.astype(float))
+    valores = valores.astype(float)
+    mask_valido = ~np.isnan(valores)
     if mask_valido.sum() < 2:
         return np.full(n, np.nan)
     eixo_orig = np.linspace(0.0, 100.0, len(valores))
     eixo_novo = np.linspace(0.0, 100.0, n)
-    return np.interp(eixo_novo, eixo_orig, valores.astype(float))
+    # Filtra NaN: mapeia apenas pontos validos para 0-100%, evitando shift lateral
+    return np.interp(eixo_novo, eixo_orig[mask_valido], valores[mask_valido])
 
 
 def agrupar_regioes(mascara_bool, eixo):
@@ -214,6 +216,7 @@ def carregar_piloto(nome, caminhos, df_meta):
     df_m["steer"] = clean_col(df_m, ["Steering Angle"])
     df_m["acel"] = clean_col(df_m, ["Throttle Pos"])
     df_m["freio"] = clean_col(df_m, ["Brake Pos"])
+    df_m["lap_count"] = clean_col(df_m, ["Session Lap Count"])
     df_m = df_m.dropna(subset=["t_sync"])
 
     return df_m, t_pupila, diam_pupila, t_sync_m
@@ -248,39 +251,70 @@ def executar():
     imagens_geradas = 0
 
     for nome, caminhos in PILOTOS.items():
-        voltas_piloto = df_meta[df_meta["piloto"] == nome]
-        if len(voltas_piloto) == 0:
-            print(f"Nenhuma volta encontrada para {nome} nos metadados")
+        if df_meta[df_meta["piloto"] == nome].empty:
+            print(f"Nenhuma entrada de sincronizacao para {nome} nos metadados")
             continue
 
         print(f"\n{'=' * 60}")
-        print(f"   PROCESSANDO: {nome.upper()} ({len(voltas_piloto)} volta(s))")
+        print(f"   CARREGANDO: {nome.upper()}")
         print(f"{'=' * 60}")
 
         df_m, t_pupila, diam_pupila, t_sync_m = carregar_piloto(nome, caminhos, df_meta)
 
-        for _, meta in voltas_piloto.iterrows():
-            volta_num = int(meta["volta_num"])
-            t_ini = float(meta["t_ini"])
-            t_fim = float(meta["t_fim"])
+        lap_counts = sorted(df_m["lap_count"].dropna().unique())
+        if len(lap_counts) > 1:
+            lap_counts = lap_counts[:-1]
+        else:
+            lap_counts = []
+        print(f"   Voltas encontradas (excl. ultima): {[int(lc) for lc in lap_counts]}")
+
+        # Duracao mediana das voltas lancadas (lap > 0) — usada para cortar o trecho do grid da Volta 0
+        duracoes_standard = []
+        for lc in lap_counts:
+            if int(lc) > 0:
+                df_lc = df_m[df_m["lap_count"] == lc]
+                if len(df_lc) >= 10:
+                    duracoes_standard.append(
+                        float(df_lc["t_sync"].max()) - float(df_lc["t_sync"].min())
+                    )
+        duracao_ref = float(np.median(duracoes_standard)) if duracoes_standard else None
+        if duracao_ref is not None:
+            print(f"   Duracao de referencia (mediana voltas 1+): {duracao_ref:.2f}s")
+
+        for lap_count in lap_counts:
+            volta_num = int(lap_count)
+            df_v = df_m[df_m["lap_count"] == lap_count].sort_values("t_sync").reset_index(drop=True)
+            t_ini = float(df_v["t_sync"].min())
+            t_fim = float(df_v["t_sync"].max())
 
             print(f"\nVolta {volta_num}: {t_ini:.2f}s -> {t_fim:.2f}s")
 
-            mask_m = (df_m["t_sync"] >= t_ini) & (df_m["t_sync"] <= t_fim)
-            df_v = df_m[mask_m].copy()
+            # Volta 0: o carro sai do grid (antes da linha de largada), gerando um trecho inicial
+            # extra que nao existe nas outras voltas. Ancoramos pelo final (linha de chegada) e
+            # descartamos tudo antes de t_corte, de modo que a Volta 0 passe a ter a mesma
+            # duracao das voltas lancadas e o ponto zero coincida com a linha de largada/chegada.
+            if volta_num == 0 and duracao_ref is not None:
+                t_corte = t_fim - duracao_ref
+                df_v = df_v[df_v["t_sync"] >= t_corte].reset_index(drop=True)
+                t_ini = float(df_v["t_sync"].min())
+                print(f"   Volta 0: trecho do grid descartado. Novo inicio: {t_ini:.2f}s "
+                      f"(corte de {t_corte - (t_fim - duracao_ref - (t_ini - t_corte)):.2f}s mantidos)")
+
             mask_p = (t_pupila >= t_ini) & (t_pupila <= t_fim)
 
             if len(df_v) < 10:
                 print(f"Poucos dados MoTeC ({len(df_v)} amostras) - pulando")
                 continue
 
-            steer_v = interpolar_volta(df_v["steer"].values, n_pontos_ideal)
-            acel_v = interpolar_volta(df_v["acel"].values, n_pontos_ideal)
-            freio_v = interpolar_volta(df_v["freio"].values, n_pontos_ideal)
+            t_pct_v = np.linspace(0, 100, len(df_v))
+            steer_v = np.interp(eixo_pct, t_pct_v, df_v["steer"].values)
+            acel_v  = np.interp(eixo_pct, t_pct_v, df_v["acel"].values)
+            freio_v = np.interp(eixo_pct, t_pct_v, df_v["freio"].values)
 
             n_pup = mask_p.sum()
             if n_pup > 5:
-                pup_v = interpolar_volta(diam_pupila[mask_p], n_pontos_ideal)
+                t_pct_pup = np.linspace(0, 100, n_pup)
+                pup_v = np.interp(eixo_pct, t_pct_pup, diam_pupila[mask_p])
             else:
                 pup_v = np.full(n_pontos_ideal, np.nan)
                 print(f"Poucos dados de pupila ({n_pup} amostras) - pupila ausente nesta volta")

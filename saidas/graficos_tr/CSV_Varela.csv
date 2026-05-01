@@ -1,0 +1,34 @@
+Timestamp,ID_Piloto,Volta,Tipo_Anomalia,Contexto_Pista,Duracao_Anomalia_s,Diam_Antes_mm,Diam_Durante_mm,Diam_Depois_mm,Delta_Diam_mm,Tipo_Resposta_Pupilar,TR_Pupila_s,TR_Steering_s,TR_Acelerador_s,TR_Freio_s,Primeiro_Sinal,N_Picos_Cognitivos,Intensidade_Media_Picos,N_Fixacoes,Dur_Media_Fixacao_ms,Fix_Curtas,Fix_Longas,Comportamento_Visual,Tempo_Reacao_Pupilar_s,Media_Tamanho_Pupilar,Crescimento_Pupilar_Derivada,Tempo_No_Escuro_s,Distancia_No_Escuro_m
+64.0856,Varela,1,A,Curva,6.526,45.1669,43.778,40.7687,-1.3889,Contracao,1.5605,0.08,0.0,0.87,Acelerador,4,1.4179,66,148.4,13,0,Exploracao visual normal,-0.915,43.8437,64268.6197,0.2137,0.4776
+72.6999,Varela,1,A,Curva,3.3935,43.5774,46.1066,47.3446,2.5292,Dilatacao,2.0721,0.0,2.37,2.37,Steering,3,1.5475,46,160.3,6,0,Exploracao visual normal,-0.3078,45.1216,66966.7867,0.2137,0.4776
+80.7922,Varela,1,A,Curva,1.6968,42.8535,44.065,47.9719,1.2115,Dilatacao,0.0,0.6959,2.4359,2.4359,Pupila,0,0.0,33,125.1,14,0,Busca visual dispersa (muitas fixacoes curtas),-2.4381,44.4728,2245.7139,0.0,0.0
+90.8423,Varela,1,A,Curva,1.5662,50.696,47.6069,47.4699,-3.0891,Contracao,0.0,2.3694,1.1394,0.9394,Pupila,2,6.7125,31,156.3,7,0,Exploracao visual normal,-2.3916,48.043,12749.8146,0.0,0.0
+3.3935,Varela,1,B,Reta,1.0442,51.1307,51.2698,49.7794,0.1391,Estavel,0.0,1.8601,1.5801,1.8501,Pupila,0,0.0,30,181.6,4,0,Exploracao visual normal,-2.2736,50.4148,67482.2437,0.2358,13.5111
+31.1944,Varela,1,B,Reta,4.1767,43.1032,47.2736,47.6081,4.1704,Dilatacao,0.941,1.48,1.64,0.0,Freio,0,0.0,46,182.8,7,0,Exploracao visual normal,-0.7034,46.3056,8226.8112,0.0,0.0
+48.4231,Varela,1,B,Reta,4.5682,44.7345,45.946,44.146,1.2115,Dilatacao,0.8479,0.39,0.58,0.0,Freio,1,1.0727,46,198.1,2,0,Exploracao visual normal,-0.2552,45.3859,14731.621,0.0,0.0
+61.8667,Varela,1,B,Reta,1.1747,46.0963,44.2577,45.2334,-1.8386,Contracao,1.1687,0.0,0.92,1.17,Steering,0,0.0,38,140.7,8,0,Exploracao visual normal,-0.008,44.7382,723.5956,0.0,0.0
+76.224,Varela,1,B,Reta,1.4357,46.2291,47.4587,45.0395,1.2296,Dilatacao,0.654,0.0,0.11,0.66,Steering,0,0.0,32,158.1,7,0,Exploracao visual normal,-0.01,45.5039,1577.1825,0.0,0.0
+87.8403,Varela,1,B,Reta,1.4357,46.3025,47.6507,50.5097,1.3482,Dilatacao,0.4657,0.84,0.0,0.84,Acelerador,0,0.0,31,168.5,6,0,Exploracao visual normal,-0.3746,47.4081,1727.5473,0.0,0.0
+95.9326,Varela,1,B,Reta,2.8715,46.4363,44.5697,42.6152,-1.8666,Contracao,1.9353,0.0,0.51,1.94,Steering,2,1.0008,42,154.2,12,0,Exploracao visual normal,-0.0073,44.4024,11003.5815,0.0,0.0
+107.6794,Varela,1,B,Reta,1.1747,42.3548,43.1251,41.4538,0.7703,Dilatacao,1.8281,1.13,2.38,0.0,Freio,4,1.5725,32,151.1,11,0,Exploracao visual normal,-0.9313,42.8218,514.1398,0.0,0.0
+110.0288,Varela,1,B,Reta,1.3052,41.6064,43.1446,43.3854,1.5382,Dilatacao,2.6385,0.51,0.0,2.63,Acelerador,4,1.4139,36,145.0,15,0,Busca visual dispersa (muitas fixacoes curtas),-0.0003,43.0879,2525.3721,0.0,0.0
+117.3379,Varela,1,B,Reta,1.9578,42.0847,42.1162,44.3365,0.0315,Estavel,0.5403,0.0,0.68,0.68,Steering,1,1.5018,37,170.8,5,0,Exploracao visual normal,-0.1477,42.7878,1122.0045,0.0,0.0
+2.4799,Varela,1,C,Curva,11.6163,50.3316,50.6909,51.1104,0.3593,Dilatacao,0.0,0.6363,0.6363,0.6363,Pupila,0,0.0,81,185.4,7,0,Exploracao visual normal,-0.6462,50.6333,67482.2437,0.2358,13.5111
+17.4897,Varela,1,C,Reta,4.0461,50.7662,47.4742,45.0446,-3.292,Contracao,0.0,0.1423,0.1423,0.1423,Pupila,1,1.9397,42,173.1,6,0,Exploracao visual normal,-0.152,47.8771,37907.884,0.2013,9.0912
+29.1061,Varela,1,C,Reta,12.1384,43.5508,47.2221,46.4491,3.6714,Dilatacao,2.3496,2.35,0.0,2.35,Acelerador,2,1.7398,84,181.4,10,0,Exploracao visual normal,-0.0065,46.3077,38718.8824,0.0,0.0
+42.5497,Varela,1,C,Reta,1.6968,46.2458,45.6102,45.3291,-0.6356,Contracao,0.514,0.0,1.83,1.83,Steering,1,1.2473,33,185.9,4,0,Exploracao visual normal,-1.3257,46.3287,3757.8565,0.0,0.0
+46.5958,Varela,1,C,Curva,26.7567,46.0114,44.4988,46.3266,-1.5126,Contracao,1.3947,1.39,0.0,0.22,Acelerador,5,1.3489,172,166.1,26,0,Exploracao visual normal,-0.0012,44.6989,83670.1698,0.2137,0.4776
+75.5714,Varela,1,C,Curva,34.5879,45.3126,44.8514,43.0863,-0.4612,Contracao,2.7746,0.0,0.32,2.78,Steering,8,2.8925,199,149.7,58,0,Exploracao visual normal,-0.0068,44.8496,404933.8978,0.0,0.0
+114.597,Varela,1,C,Reta,1.1747,43.993,43.0687,41.9415,-0.9243,Contracao,0.0,0.2111,0.2111,0.2111,Pupila,3,1.8383,33,153.9,9,0,Exploracao visual normal,-0.2181,43.2666,2218.4841,0.0,0.0
+118.1211,Varela,1,C,Reta,2.8715,42.0265,43.236,43.4689,1.2095,Dilatacao,0.0,0.2882,0.2982,0.2982,Pupila,1,1.5018,41,171.4,5,0,Exploracao visual normal,-0.2992,42.794,18929.1253,0.0,0.0
+132.7925,Varela,2,C,Curva,9.6786,44.0078,43.7612,45.7425,-0.2466,Contracao,0.0,0.1734,0.1734,0.1734,Pupila,0,0.0,70,192.2,4,0,Exploracao visual normal,-0.1759,44.0437,28745.8138,0.0,0.0
+146.7123,Varela,2,C,Reta,5.1112,47.207,48.484,47.3315,1.277,Dilatacao,0.0,0.8144,0.8144,0.8144,Pupila,0,0.0,58,153.8,11,0,Exploracao visual normal,-0.8167,47.8508,20413.3166,0.0,0.0
+159.1097,Varela,2,C,Curva,5.9812,44.0226,42.7331,42.7409,-1.2895,Contracao,0.8392,0.83,0.83,0.0,Freio,1,1.0779,55,192.2,5,0,Exploracao visual normal,-0.0005,43.2065,12792.3163,0.0,0.0
+173.682,Varela,2,C,Reta,3.045,47.9154,46.7514,44.9545,-1.164,Contracao,0.0,1.9753,1.4853,1.6953,Pupila,2,0.8433,44,169.0,5,0,Exploracao visual normal,-1.9773,46.3435,3326.039,0.0,0.0
+178.0319,Varela,2,C,Curva,2.3925,44.8676,44.3864,44.5298,-0.4812,Contracao,1.0286,2.61,0.32,0.0,Freio,1,1.8387,41,162.3,7,0,Exploracao visual normal,-1.8033,45.2747,9153.2643,0.0,0.0
+181.6207,Varela,2,C,Curva,29.3622,44.7913,46.1047,48.4202,1.3134,Dilatacao,1.0516,0.0,0.24,1.37,Steering,8,1.7189,172,164.8,37,0,Exploracao visual normal,-0.3191,46.006,16541.6221,0.239,4.017
+211.8528,Varela,2,C,Curva,5.3287,49.0207,45.6038,44.05,-3.4169,Contracao,1.829,0.0,2.37,2.37,Steering,3,0.8146,42,134.0,18,0,Busca visual dispersa (muitas fixacoes curtas),-0.5438,46.4818,20728.5278,0.0,0.0
+218.8127,Varela,2,C,Reta,1.9575,43.9275,44.4426,46.3175,0.515,Dilatacao,0.2965,0.15,0.0,2.76,Acelerador,2,0.9062,33,107.6,19,0,Busca visual dispersa (muitas fixacoes curtas),-2.4662,45.0713,2048.4114,0.0,0.0
+223.0539,Varela,2,C,Reta,2.3925,46.7654,45.5684,47.1474,-1.197,Contracao,0.0,2.0996,2.0996,2.0996,Pupila,2,1.2628,39,140.6,13,0,Exploracao visual normal,-2.1036,46.2971,15889.2741,0.0,0.0
+226.3164,Varela,2,C,Reta,2.5012,46.897,47.7335,47.3342,0.8365,Dilatacao,0.0,0.6243,0.7443,0.7443,Pupila,1,1.5188,38,174.4,3,0,Exploracao visual normal,-0.7507,46.8862,32344.8503,0.0,0.0
+230.0138,Varela,2,C,Reta,1.6312,47.0843,47.0386,47.4941,-0.0457,Estavel,1.6311,0.0,1.97,1.97,Steering,0,0.0,35,175.1,5,0,Exploracao visual normal,-0.3428,47.1592,6697.5262,0.0,0.0

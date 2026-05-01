@@ -1,0 +1,15 @@
+Timestamp,ID_Piloto,Volta,Tipo_Anomalia,Contexto_Pista,Duracao_Anomalia_s,Diam_Antes_mm,Diam_Durante_mm,Diam_Depois_mm,Delta_Diam_mm,Tipo_Resposta_Pupilar,TR_Pupila_s,TR_Steering_s,TR_Acelerador_s,TR_Freio_s,Primeiro_Sinal,N_Picos_Cognitivos,Intensidade_Media_Picos,N_Fixacoes,Dur_Media_Fixacao_ms,Fix_Curtas,Fix_Longas,Comportamento_Visual,Tempo_Reacao_Pupilar_s,Media_Tamanho_Pupilar,Crescimento_Pupilar_Derivada,Tempo_No_Escuro_s,Distancia_No_Escuro_m
+2.8025,Humberto,1,C,Curva,8.0072,35.4253,35.2358,36.3883,-0.1895,Estavel,0.8469,0.85,0.05,0.0,Freio,1,1.2761,65,184.8,4,0,Exploracao visual normal,-0.0056,35.0907,72903.6502,0.4273,19.1491
+11.7105,Humberto,1,C,Curva,5.8052,36.3497,34.1505,31.5655,-2.1992,Contracao,0.5009,0.35,0.0,2.09,Acelerador,0,0.0,55,161.4,10,0,Exploracao visual normal,-1.5897,33.869,29716.7663,0.0,0.0
+26.9242,Humberto,1,C,Curva,9.9089,28.8922,29.7679,32.4479,0.8757,Dilatacao,0.9068,0.91,0.05,0.0,Freio,0,0.0,72,196.1,4,0,Exploracao visual normal,-0.0074,29.9315,20528.6146,0.2029,6.9629
+39.2353,Humberto,1,C,Curva,33.2299,32.1163,31.1468,32.8058,-0.9696,Contracao,0.0,0.0261,0.0261,0.0261,Pupila,1,0.9317,206,163.6,38,0,Exploracao visual normal,-0.0314,31.2913,24657.5272,0.0,0.0
+73.6663,Humberto,1,C,Curva,6.2056,32.4642,28.6038,28.762,-3.8605,Contracao,2.4813,0.0,2.56,2.56,Steering,1,1.0043,58,163.0,9,0,Exploracao visual normal,-0.085,29.848,7977.1286,0.0,0.0
+81.6735,Humberto,1,C,Reta,1.4013,29.172,28.4498,28.6189,-0.7223,Contracao,1.8595,0.0,2.69,2.69,Steering,0,0.0,33,180.0,4,0,Exploracao visual normal,-0.834,28.3894,4626.6415,0.0,0.0
+84.3759,Humberto,1,C,Reta,4.1037,28.211,29.3638,30.9245,1.1529,Dilatacao,0.0,0.4779,0.4779,0.4779,Pupila,0,0.0,47,169.8,7,0,Exploracao visual normal,-0.4839,29.0616,13342.1836,0.2098,10.5278
+158.5111,Humberto,2,B,Reta,1.1021,32.3474,31.5058,31.7865,-0.8417,Contracao,2.2696,1.11,0.0,2.27,Acelerador,0,0.0,33,159.5,7,0,Exploracao visual normal,-0.0015,31.9595,3765.6615,0.0,0.0
+104.208,Humberto,2,C,Curva,12.4236,28.8059,32.1975,34.2295,3.3915,Dilatacao,1.3996,0.88,0.02,0.0,Freio,1,0.9462,91,179.2,11,0,Exploracao visual normal,-0.5584,31.7626,12219.9082,0.2231,5.4884
+126.851,Humberto,2,C,Curva,9.1173,31.0689,29.5761,32.7317,-1.4928,Contracao,0.0,1.0115,0.0915,0.0415,Pupila,0,0.0,68,195.2,3,0,Exploracao visual normal,-1.0125,30.2241,17405.3774,0.2123,9.65
+139.4749,Humberto,2,C,Curva,20.6392,33.927,32.5803,31.6941,-1.3467,Contracao,0.0,0.5093,0.5093,0.5093,Pupila,1,0.8479,141,163.4,24,0,Exploracao visual normal,-0.5142,32.5357,45124.1799,0.2531,6.7935
+161.0158,Humberto,2,C,Curva,8.0152,31.6732,31.3021,31.1306,-0.3711,Contracao,0.4606,0.0,0.05,0.05,Steering,0,0.0,77,141.0,21,0,Exploracao visual normal,-0.0053,31.3774,9875.9672,0.0,0.0
+170.0329,Humberto,2,C,Curva,10.52,31.1287,30.0847,30.2079,-1.044,Contracao,0.9529,0.0,1.85,1.85,Steering,0,0.0,85,157.9,16,0,Exploracao visual normal,-0.9001,30.4593,20308.1534,0.0,0.0
+184.3601,Humberto,2,C,Reta,4.3082,29.5012,29.9761,31.2993,0.4749,Dilatacao,0.0,0.4873,0.4873,0.4873,Pupila,0,0.0,56,150.6,15,0,Exploracao visual normal,-0.4875,30.0203,4015.9797,0.0,0.0
