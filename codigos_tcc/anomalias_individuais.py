@@ -1747,11 +1747,67 @@ def executar():
     # Exportar base consolidada para ANOVA
     consolidar_csvs_anova(csvs_individuais, ARQUIVO_BASE_ANOVA)
 
+    _persistir_banco_individuais(registros_csv)
+
     print(f"\n{'=' * 60}")
     print(f"PDFs gerados: {len(pdfs_gerados)}")
     for caminho in pdfs_gerados:
         print(f"  - {caminho}")
     print(f"{'=' * 60}")
+
+
+def _persistir_banco_individuais(registros_csv):
+    try:
+        from backend.database import SessionLocal
+        from backend.db_ops import (
+            get_or_create_piloto, get_or_create_sessao,
+            upsert_metrica_anomalia, upsert_fixacao_anomalia,
+        )
+        from backend.models import Anomalia as AnomaliaModel
+        from backend.models import Volta as VoltaModel
+
+        db = SessionLocal()
+        try:
+            sessao = get_or_create_sessao(db, "InterTatus")
+            count = 0
+            for rec in registros_csv:
+                nome = rec.get("piloto")
+                if not nome:
+                    continue
+                piloto = get_or_create_piloto(db, nome)
+                volta = db.query(VoltaModel).filter_by(
+                    sessao_id=sessao.id,
+                    piloto_id=piloto.id,
+                    numero_volta=int(rec["volta_num"]),
+                ).first()
+                if not volta:
+                    continue
+                anom = db.query(AnomaliaModel).filter_by(
+                    volta_id=volta.id,
+                    numero_anomalia=int(rec["anom_num"]),
+                ).first()
+                if not anom:
+                    continue
+                # Enriquece anomalia com dados calculados aqui
+                if not anom.contexto_pista and rec.get("contexto_pista"):
+                    anom.contexto_pista = str(rec["contexto_pista"])
+                if not anom.duracao_s and rec.get("duracao_anom"):
+                    try:
+                        anom.duracao_s = float(rec["duracao_anom"])
+                    except (TypeError, ValueError):
+                        pass
+                upsert_metrica_anomalia(db, anom.id, rec)
+                upsert_fixacao_anomalia(db, anom.id, rec)
+                count += 1
+            db.commit()
+            print(f"✅ [DB] {count} métrica(s) individual(is) persistida(s).")
+        except Exception as e:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"⚠️  [DB] Falha ao persistir métricas — análise não afetada. Erro: {e}")
 
 
 def main():

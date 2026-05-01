@@ -255,6 +255,55 @@ def executar():
     pd.DataFrame(todas_metas).to_csv(ARQUIVO_VOLTAS, index=False)
     print(f"💾 Metadados das voltas salvos em: {ARQUIVO_VOLTAS}")
 
+    _persistir_banco_media(df_ideal, todas_metas, resultados)
+
+def _persistir_banco_media(df_ideal, todas_metas, resultados):
+    try:
+        from backend.database import SessionLocal
+        from backend.db_ops import (
+            get_or_create_piloto, get_or_create_sessao,
+            upsert_parametros_sync, upsert_volta,
+            upsert_tracado_ideal, upsert_serie_temporal,
+        )
+        db = SessionLocal()
+        try:
+            sessao = get_or_create_sessao(db, "InterTatus")
+            pilotos_ids = []
+            for meta in todas_metas:
+                nome = meta['piloto']
+                piloto = get_or_create_piloto(db, nome)
+                pilotos_ids.append(piloto.id)
+                upsert_parametros_sync(db, sessao.id, piloto.id, t_sync_motec_s=meta['t_sync_m'])
+                volta = upsert_volta(
+                    db, sessao.id, piloto.id,
+                    numero_volta=int(meta['volta_num']),
+                    t_ini=meta['t_ini'],
+                    t_fim=meta['t_fim'],
+                    duracao=meta['t_fim'] - meta['t_ini'],
+                    eh_ouro=True,
+                )
+                df_o = resultados[nome]
+                upsert_serie_temporal(db, volta.id, "motec", {
+                    "t":       df_o["tempo_sync"].tolist(),
+                    "acel":    df_o["acel"].tolist() if "acel" in df_o.columns else [],
+                    "freio":   df_o["freio"].tolist() if "freio" in df_o.columns else [],
+                    "volante": df_o["volante"].tolist() if "volante" in df_o.columns else [],
+                })
+                upsert_serie_temporal(db, volta.id, "pupila", {
+                    "t":    df_o["tempo_sync"].tolist(),
+                    "diam": df_o["diam_suav"].tolist(),
+                })
+            upsert_tracado_ideal(db, sessao.id, df_ideal, pilotos_ids)
+            db.commit()
+            print(f"✅ [DB] Traçado ideal e {len(todas_metas)} volta(s)-ouro persistidas.")
+        except Exception as e:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"⚠️  [DB] Falha ao persistir — análise não afetada. Erro: {e}")
+
 def main():
     try:
         executar()

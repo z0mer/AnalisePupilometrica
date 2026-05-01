@@ -439,10 +439,61 @@ def executar():
     df_anom = pd.DataFrame(todas_anomalias_registro)
     df_anom.to_csv(ARQUIVO_ANOMALIAS, index=False)
 
+    _persistir_banco_anomalias(todas_anomalias_registro)
+
     print(f"\n{'=' * 60}")
     print(f"{imagens_geradas} imagem(ns) gerada(s) em: {GRAFICOS_VOLTAS_DIR}")
     print(f"{len(todas_anomalias_registro)} anomalia(s) registrada(s) em: {ARQUIVO_ANOMALIAS}")
     print(f"{'=' * 60}")
+
+
+def _persistir_banco_anomalias(todas_anomalias_registro):
+    try:
+        from backend.database import SessionLocal
+        from backend.db_ops import (
+            get_or_create_piloto, get_or_create_sessao,
+            upsert_volta, upsert_anomalia,
+        )
+        from backend.models import TracadoIdeal as TracadoIdealModel
+
+        db = SessionLocal()
+        try:
+            sessao = get_or_create_sessao(db, "InterTatus")
+            ti = db.query(TracadoIdealModel).filter_by(sessao_id=sessao.id).first()
+            ti_id = ti.id if ti else None
+
+            count = 0
+            for rec in todas_anomalias_registro:
+                piloto = get_or_create_piloto(db, rec["piloto"])
+                t_ini = float(rec["t_ini_volta"])
+                t_fim = float(rec["t_fim_volta"])
+                volta = upsert_volta(
+                    db, sessao.id, piloto.id,
+                    numero_volta=int(rec["volta_num"]),
+                    t_ini=t_ini,
+                    t_fim=t_fim,
+                    duracao=t_fim - t_ini,
+                )
+                upsert_anomalia(
+                    db, volta.id,
+                    numero_anomalia=int(rec["anom_num"]),
+                    tipo=str(rec["tipo"]),
+                    ini_pct=float(rec["ini_pct"]),
+                    fim_pct=float(rec["fim_pct"]),
+                    t_ini_s=t_ini,
+                    t_fim_s=t_fim,
+                    tracado_ideal_id=ti_id,
+                )
+                count += 1
+            db.commit()
+            print(f"✅ [DB] {count} anomalia(s) persistida(s).")
+        except Exception as e:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"⚠️  [DB] Falha ao persistir anomalias — análise não afetada. Erro: {e}")
 
 
 def main():
