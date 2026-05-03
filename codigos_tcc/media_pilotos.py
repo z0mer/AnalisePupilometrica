@@ -60,7 +60,7 @@ def clean_col(df, name_list):
     print(f"   ❌ Não encontrado: {name_list}")
     return None, None
 
-def processar_piloto(nome, caminhos):
+def processar_piloto(nome, caminhos, sessao_nome="InterTatus"):
     print(f"\n{'='*60}")
     print(f"   👤 PILOTO: {nome.upper()}")
     print(f"{'='*60}")
@@ -94,10 +94,45 @@ def processar_piloto(nome, caminhos):
     c_p_d = c_p_d_list[0]
     print(f"   Usando diâmetro: '{c_p_d}'")
 
-    print(f"\n🏁 MARCO ZERO — {nome}")
-    frame_sync = int(input(f"   🎬 [{nome}] FRAME do Marco Zero: "))
-    t_sync_m   = tradutor_de_tempos(input(f"   🏎️  [{nome}] Tempo MoTeC do Marco Zero: "))
-    t_sync_p   = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
+    print(f"\n🏁 MARCO ZERO — {nome} (lendo do banco)")
+    from backend.database import SessionLocal
+    from backend.db_ops import get_or_create_piloto, get_or_create_sessao
+    from backend.models import ParametrosSync, Volta
+
+    with SessionLocal() as _db:
+        _sessao = get_or_create_sessao(_db, sessao_nome)
+        _piloto = get_or_create_piloto(_db, nome)
+        _params = _db.query(ParametrosSync).filter_by(
+            sessao_id=_sessao.id, piloto_id=_piloto.id
+        ).first()
+        if not _params or _params.frame_sync is None or _params.t_sync_motec_s is None:
+            raise Exception(
+                f"Parâmetros de sync ausentes para '{nome}' na sessão '{sessao_nome}'. "
+                "Execute sincronizacao.py antes deste script."
+            )
+        frame_sync = _params.frame_sync
+        t_sync_m   = _params.t_sync_motec_s
+
+        _volta_ouro = _db.query(Volta).filter(
+            Volta.sessao_id == _sessao.id,
+            Volta.piloto_id == _piloto.id,
+            Volta.eh_volta_ouro == True,
+            Volta.frame_ini_pupil.isnot(None),
+            Volta.frame_fim_pupil.isnot(None),
+        ).first()
+        if not _volta_ouro:
+            raise Exception(
+                f"Volta ouro com frames de pupila ausente para '{nome}' na sessão '{sessao_nome}'. "
+                "Execute sincronizacao.py antes deste script."
+            )
+        frame_ini    = _volta_ouro.frame_ini_pupil
+        frame_fim    = _volta_ouro.frame_fim_pupil
+        numero_volta = _volta_ouro.numero_volta
+
+    print(f"   frame_sync   = {frame_sync}  |  t_sync_motec = {t_sync_m:.4f} s")
+    print(f"   frame_ini    = {frame_ini}  |  frame_fim    = {frame_fim}  |  volta {numero_volta}")
+
+    t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
     print(f"   Timestamp bruto Marco Zero: {t_sync_p}")
 
     df_pupil[c_p_t] = df_pupil[c_p_t].apply(force_float)
@@ -137,18 +172,10 @@ def processar_piloto(nome, caminhos):
         else:
             print(f"   ⚠️ '{col}' não disponível.")
 
-    print(f"\n🏆 VOLTA DE OURO — {nome}")
-    frame_ini = int(input(f"   🎬 [{nome}] FRAME INICIAL da Volta: "))
-    frame_fim = int(input(f"   🎬 [{nome}] FRAME FINAL da Volta: "))
-
+    print(f"\n🏆 VOLTA DE OURO — {nome} (frames do banco)")
     t_ini_sync = (atirar_com_sniper(frame_ini, df_pupil, c_p_wi, c_p_t) - t_sync_p) / escala
     t_fim_sync = (atirar_com_sniper(frame_fim, df_pupil, c_p_wi, c_p_t) - t_sync_p) / escala
     print(f"   Janela: {t_ini_sync:.2f}s → {t_fim_sync:.2f}s")
-
-    t_ini_m_raw = input(f"   🏎️  [{nome}] Tempo INICIAL MoTeC (registro): ")
-    t_fim_m_raw = input(f"   🏎️  [{nome}] Tempo FINAL MoTeC (registro): ")
-    _ = tradutor_de_tempos(t_ini_m_raw) if t_ini_m_raw.strip() else 0
-    _ = tradutor_de_tempos(t_fim_m_raw) if t_fim_m_raw.strip() else 0
 
     df_ouro = df_master[
         (df_master['tempo_sync'] >= t_ini_sync) &
@@ -160,22 +187,23 @@ def processar_piloto(nome, caminhos):
         raise Exception(f"Volta de ouro vazia para {nome}!")
 
     meta = {
-        'piloto': nome,
-        'volta_num': 1,
-        't_ini': t_ini_sync,
-        't_fim': t_fim_sync,
-        't_sync_m': t_sync_m
+        'piloto':    nome,
+        'volta_num': numero_volta,
+        't_ini':     t_ini_sync,
+        't_fim':     t_fim_sync,
+        't_sync_m':  t_sync_m,
     }
 
     return df_ouro, meta
 
 def executar():
     validar_arquivos_base()
+    sessao_nome = input("Nome da sessão (deve coincidir com o usado em sincronizacao.py, ex: 'InterTatus'): ").strip() or "InterTatus"
     resultados = {}
     todas_metas = []
 
     for nome, caminhos in PILOTOS.items():
-        df_ouro, meta = processar_piloto(nome, caminhos)
+        df_ouro, meta = processar_piloto(nome, caminhos, sessao_nome)
         resultados[nome] = df_ouro
         todas_metas.append(meta)
 
@@ -255,9 +283,9 @@ def executar():
     pd.DataFrame(todas_metas).to_csv(ARQUIVO_VOLTAS, index=False)
     print(f"💾 Metadados das voltas salvos em: {ARQUIVO_VOLTAS}")
 
-    _persistir_banco_media(df_ideal, todas_metas, resultados)
+    _persistir_banco_media(df_ideal, todas_metas, resultados, sessao_nome)
 
-def _persistir_banco_media(df_ideal, todas_metas, resultados):
+def _persistir_banco_media(df_ideal, todas_metas, resultados, sessao_nome="InterTatus"):
     try:
         from backend.database import SessionLocal
         from backend.db_ops import (
@@ -267,7 +295,7 @@ def _persistir_banco_media(df_ideal, todas_metas, resultados):
         )
         db = SessionLocal()
         try:
-            sessao = get_or_create_sessao(db, "InterTatus")
+            sessao = get_or_create_sessao(db, sessao_nome)
             pilotos_ids = []
             for meta in todas_metas:
                 nome = meta['piloto']

@@ -14,16 +14,19 @@ for pasta in (SAIDAS_DIR, VOLTA_IDEAL_DIR, GRAFICOS_VOLTAS_DIR, GRAFICOS_TR_DIR)
 
 PILOTOS = {
     "Humberto": {
-        "pupila": DADOS_DIR / "Bertinho_InterTatus" / "pupil_positions.csv",
-        "motec": DADOS_DIR / "Bertinho_InterTatus" / "Humberto.csv",
+        "pupila":    DADOS_DIR / "Bertinho_InterTatus" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Bertinho_InterTatus" / "fixations.csv",
+        "motec":     DADOS_DIR / "Bertinho_InterTatus" / "Humberto.csv",
     },
     "Rafa": {
-        "pupila": DADOS_DIR / "Rafa_InterTatus" / "pupil_positions.csv",
-        "motec": DADOS_DIR / "Rafa_InterTatus" / "Rafa.csv",
+        "pupila":    DADOS_DIR / "Rafa_InterTatus" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Rafa_InterTatus" / "fixations.csv",
+        "motec":     DADOS_DIR / "Rafa_InterTatus" / "Rafa.csv",
     },
     "Varela": {
-        "pupila": DADOS_DIR / "VV_InterTatus" / "pupil_positions.csv",
-        "motec": DADOS_DIR / "VV_InterTatus" / "Varela.csv",
+        "pupila":    DADOS_DIR / "VV_InterTatus" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "VV_InterTatus" / "fixations.csv",
+        "motec":     DADOS_DIR / "VV_InterTatus" / "Varela.csv",
     },
 }
 

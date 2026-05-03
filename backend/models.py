@@ -193,6 +193,10 @@ class Volta(Base):
     t_fim_sync_s: Mapped[float | None] = mapped_column(Float, nullable=True)
     duracao_s: Mapped[float | None] = mapped_column(Float, nullable=True)
     eh_volta_ouro: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # start_frame_index do Pupil Player no início da melhor volta (etapa 4 da sincronização)
+    frame_ini_pupil: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # start_frame_index do Pupil Player no fim da melhor volta (etapa 4 da sincronização)
+    frame_fim_pupil: Mapped[int | None] = mapped_column(Integer, nullable=True)
     criado_em: Mapped[datetime] = mapped_column(
         default=_now, server_default=func.now()
     )

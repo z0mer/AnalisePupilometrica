@@ -128,6 +128,8 @@ def upsert_volta(
     t_fim: float | None = None,
     duracao: float | None = None,
     eh_ouro: bool = False,
+    frame_ini_pupil: int | None = None,
+    frame_fim_pupil: int | None = None,
 ) -> Volta:
     v = db.query(Volta).filter_by(
         sessao_id=sessao_id, piloto_id=piloto_id, numero_volta=numero_volta
@@ -143,6 +145,10 @@ def upsert_volta(
         v.duracao_s = duracao
     if eh_ouro:
         v.eh_volta_ouro = True
+    if frame_ini_pupil is not None:
+        v.frame_ini_pupil = frame_ini_pupil
+    if frame_fim_pupil is not None:
+        v.frame_fim_pupil = frame_fim_pupil
     db.flush()
     return v
 
