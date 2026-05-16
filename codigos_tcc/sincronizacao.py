@@ -353,9 +353,14 @@ def etapa4_melhor_volta(
         print(f"   Volta {V} inválida. Escolha entre: {voltas_disponiveis}")
 
     # Índices de linha no MoTeC para início e fim da volta V
-    # Regra: Volta V começa no índice V e termina no índice V+1
+    # Regra: Volta V começa no índice V e termina no índice V+1.
+    # Para a última volta disponível, V+1 está fora da lista — usa o último
+    # sample do df_motec (que já foi truncado até indices_quedas[-1]+1).
     idx_ini = indices_quedas[V]
-    idx_fim = indices_quedas[V + 1]
+    if V + 1 < len(indices_quedas):
+        idx_fim = indices_quedas[V + 1]
+    else:
+        idx_fim = df_motec.index[-1]
 
     # Tempos sincronizados (relativo ao ponto de largada)
     t_ini_s = _extrair_tempo_motec(df_motec, idx_ini) - t_sync_motec_s

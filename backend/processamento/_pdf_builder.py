@@ -176,6 +176,7 @@ def gerar_pdf_bytes(
     diam_pupila_total: np.ndarray,
     df_fix_sync: pd.DataFrame,
     lista_voltas: list[dict],
+    imagens_voltas: dict[str, bytes] | None = None,
 ) -> bytes | None:
     """
     Gera o relatório PDF completo em memória (bytes).
@@ -330,6 +331,47 @@ def gerar_pdf_bytes(
     if fig_perf:
         historia.append(Image(io.BytesIO(fig_perf), width=largura_pagina - 3 * cm, height=11 * cm))
     historia.append(Spacer(1, 0.3 * cm))
+
+    # ── Seção: Análise geral por volta ────────────────────────────────────────
+    # Cada imagem tem chave "volta_NN_nome.png"; exibe uma página por volta.
+    if imagens_voltas:
+        # Ordena as chaves para garantir volta 1, 2, 3, ...
+        chaves_ordenadas = sorted(imagens_voltas.keys())
+        if chaves_ordenadas:
+            historia.append(PageBreak())
+            historia.append(Paragraph("Analise Geral por Volta", e_sec))
+            historia.append(HRFlowable(width="100%", thickness=2,
+                                       color=colors.HexColor("#2980b9"), spaceAfter=8))
+            historia.append(Paragraph(
+                "Para cada volta sao exibidos (de cima para baixo): contexto da pista "
+                "(reta/curva), esterçamento do piloto vs media ideal (±1σ), desvio "
+                "em relacao ao ideal, pedais (acelerador e freio) e diametro pupilar. "
+                "As anomalias detectadas estao destacadas em cor.",
+                e_analise,
+            ))
+
+            for chave in chaves_ordenadas:
+                # Extrai número da volta do nome do arquivo "volta_01_Nome.png"
+                try:
+                    volta_n = int(chave.split("_")[1])
+                except (IndexError, ValueError):
+                    volta_n = 0
+
+                historia.append(PageBreak())
+                historia.append(Paragraph(f"Volta {volta_n}", e_sec))
+                historia.append(HRFlowable(width="100%", thickness=1,
+                                           color=colors.HexColor("#2980b9"), spaceAfter=6))
+                img_data = imagens_voltas[chave]
+                historia.append(
+                    Image(io.BytesIO(img_data),
+                          width=largura_pagina - 3 * cm,
+                          height=14 * cm)
+                )
+                historia.append(Spacer(1, 0.2 * cm))
+                historia.append(Paragraph(
+                    f"Relatorio TCC - {nome} | Volta {volta_n} | {data_hora}",
+                    e_rodape,
+                ))
 
     # ── Páginas de anomalias individuais ──────────────────────────────────────
     for d in lista_anomalias_dados:

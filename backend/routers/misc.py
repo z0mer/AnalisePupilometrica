@@ -24,6 +24,13 @@ def tracado_ideal():
     return {"url": url}
 
 
+@router.get("/tracado-ideal-csv", summary="Retorna a URL do CSV do traçado ideal mais recente")
+def tracado_ideal_csv():
+    csv_path = SAIDAS_DIR / "volta_ideal" / "tracado_ideal.csv"
+    url = "/static/volta_ideal/tracado_ideal.csv" if csv_path.exists() else None
+    return {"url": url}
+
+
 @router.get("/csv-geral", summary="Retorna a URL do CSV consolidado de todos os pilotos")
 def csv_geral():
     csv_path = SAIDAS_DIR / "graficos_tr" / "relatorio_TR.csv"

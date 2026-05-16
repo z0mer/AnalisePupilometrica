@@ -13,21 +13,60 @@ for pasta in (SAIDAS_DIR, VOLTA_IDEAL_DIR, GRAFICOS_VOLTAS_DIR, GRAFICOS_TR_DIR)
 
 
 PILOTOS = {
-    "Humberto": {
-        "pupila":    DADOS_DIR / "Bertinho_InterTatus" / "pupil_positions.csv",
-        "fixations": DADOS_DIR / "Bertinho_InterTatus" / "fixations.csv",
-        "motec":     DADOS_DIR / "Bertinho_InterTatus" / "Humberto.csv",
+    "Matheus": {
+        "pupila":  DADOS_DIR / "Matheus_InterMustang" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Matheus_InterMustang" / "fixations.csv",
+        "motec":     DADOS_DIR / "Matheus_InterMustang" / "Matheus.csv",
+        "blinks":     DADOS_DIR / "Matheus_InterMustang" / "blinks.csv",
     },
-    "Rafa": {
-        "pupila":    DADOS_DIR / "Rafa_InterTatus" / "pupil_positions.csv",
-        "fixations": DADOS_DIR / "Rafa_InterTatus" / "fixations.csv",
-        "motec":     DADOS_DIR / "Rafa_InterTatus" / "Rafa.csv",
+    # "Rodi": {
+    #     "pupila":  DADOS_DIR / "Rodi_InterMustang" / "pupil_positions.csv",
+    #     "fixations": DADOS_DIR / "Rodi_InterMustang" / "fixations.csv",
+    #     "motec":     DADOS_DIR / "Rodi_InterMustang" / "Rodi.csv",
+    #     "blinks":     DADOS_DIR / "Rodi_InterMustang" / "blinks.csv",
+    # },
+    "Rodrigo": {
+        "pupila":  DADOS_DIR / "Rodrigo_InterMustang" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Rodrigo_InterMustang" / "fixations.csv",
+        "motec":     DADOS_DIR / "Rodrigo_InterMustang" / "Rodrigo.csv",
+        "blinks":     DADOS_DIR / "Rodrigo_InterMustang" / "blinks.csv",
     },
-    "Varela": {
-        "pupila":    DADOS_DIR / "VV_InterTatus" / "pupil_positions.csv",
-        "fixations": DADOS_DIR / "VV_InterTatus" / "fixations.csv",
-        "motec":     DADOS_DIR / "VV_InterTatus" / "Varela.csv",
+    "Grota": {
+        "pupila":  DADOS_DIR / "Grota_InterLambo" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Grota_InterLambo" / "fixations.csv",
+        "motec":     DADOS_DIR / "Grota_InterLambo" / "Grota.csv",
+        "blinks":     DADOS_DIR / "Grota_InterLambo" / "blinks.csv",
     },
+    "Rafa - Mustang": {
+        "pupila":  DADOS_DIR / "Rafa_InterMustang" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Rafa_InterMustang" / "fixations.csv",
+        "motec":     DADOS_DIR / "Rafa_InterMustang" / "Rafa.csv",
+        "blinks":     DADOS_DIR / "Rafa_InterMustang" / "blinks.csv",
+    },
+    "Bruno T": {
+        "pupila":  DADOS_DIR / "BrunoT_InterOnix" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "BrunoT_InterOnix" / "fixations.csv",
+        "motec":     DADOS_DIR / "BrunoT_InterOnix" / "Bruno Tauan.csv",
+        "blinks":     DADOS_DIR / "BrunoT_InterOnix" / "blinks.csv",
+    },
+    "Carloni": {
+        "pupila":  DADOS_DIR / "Carloni_InterRSS" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Carloni_InterRSS" / "fixations.csv",
+        "motec":     DADOS_DIR / "Carloni_InterRSS" / "Carloni.csv",
+        "blinks":     DADOS_DIR / "Carloni_InterRSS" / "blinks.csv",
+    },
+    "Anna Carolina": {
+        "pupila": DADOS_DIR / "Anna_InterTatus" / "pupil_positions.csv",
+        "fixations": DADOS_DIR / "Anna_InterTatus" / "fixations.csv",
+        "motec": DADOS_DIR / "Anna_InterTatus" / "Anna.csv",
+        "blinks": DADOS_DIR / "Anna_InterTatus" / "blinks.csv",
+    },
+    # "Niko": {
+    #     "pupila": DADOS_DIR / "Niko_InterGTR" / "pupil_positions.csv",
+    #     "fixations":  DADOS_DIR / "Niko_InterGTR" / "fixations.csv",
+    #     "motec": DADOS_DIR / "Niko_InterGTR" / "Niko.csv",
+    #     "blinks": DADOS_DIR / "Niko_InterGTR" / "blinks.csv",
+    # },
 }
 
 

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import SAIDAS_DIR
 from backend.database import get_db
-from backend.models import ParametrosSync, Piloto, Volta
+from backend.models import Anomalia, ParametrosSync, Piloto, Volta
 
 router = APIRouter(prefix="/api", tags=["Pilotos"])
 
@@ -35,6 +35,8 @@ def buscar_piloto(nome: str, db: Session = Depends(get_db)):
         .first()
     )
 
+    tem_csvs_salvos = bool(ps and ps.dados_pupil and ps.dados_motec)
+
     return {
         "id": piloto.id,
         "nome": piloto.nome,
@@ -44,6 +46,32 @@ def buscar_piloto(nome: str, db: Session = Depends(get_db)):
         "t_ini_motec_s": volta_ouro.t_ini_sync_s if volta_ouro else None,
         "t_fim_motec_s": volta_ouro.t_fim_sync_s if volta_ouro else None,
         "numero_volta": volta_ouro.numero_volta if volta_ouro else 1,
+        "tem_csvs_salvos": tem_csvs_salvos,
+    }
+
+
+@router.get(
+    "/pilotos/{nome}/status",
+    summary="Retorna se o piloto existe e se já foi processado (voltas/anomalias)",
+)
+def status_piloto(nome: str, db: Session = Depends(get_db)):
+    piloto = db.query(Piloto).filter_by(nome=nome.strip()).first()
+    if not piloto:
+        return {"existe": False, "processado": False}
+
+    n_voltas = db.query(Volta).filter_by(piloto_id=piloto.id).count()
+    n_anomalias = (
+        db.query(Anomalia)
+        .join(Volta, Anomalia.volta_id == Volta.id)
+        .filter(Volta.piloto_id == piloto.id)
+        .count()
+    )
+
+    return {
+        "existe": True,
+        "processado": n_voltas > 0,
+        "voltas": n_voltas,
+        "anomalias": n_anomalias,
     }
 
 

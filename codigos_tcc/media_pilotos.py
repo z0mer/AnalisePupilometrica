@@ -235,29 +235,41 @@ def executar():
         sigmas[canal] = np.nanstd(stack,  axis=0)
 
     # ---------------------------------------------------------------
-    # 📊 GRÁFICO: Limpo para TCC
+    # 📊 GRÁFICO: Esterçamento + Contexto Reta/Curva
     # ---------------------------------------------------------------
-    fig2, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(16, 10), sharex=True)
-    fig2.suptitle('Traçado Ideal — Média das Voltas de Ouro (Limpo)', fontsize=14, fontweight='bold')
+    LIMIAR_RETA_GRAUS = 10.0
+    eh_reta  = np.abs(medias['volante']) < LIMIAR_RETA_GRAUS
+    eh_curva = ~eh_reta
 
-    ax1.plot(eixo_norm, medias['diam_suav'], color='purple', linewidth=2)
-    ax1.fill_between(eixo_norm, medias['diam_suav'] - sigmas['diam_suav'], medias['diam_suav'] + sigmas['diam_suav'], alpha=0.15, color='purple')
-    ax1.set_title('Dilatação da Pupila'); ax1.set_ylabel('Diâmetro (mm)'); ax1.grid(True, alpha=0.3)
+    fig2, (ax_ctx, ax_steer) = plt.subplots(
+        2, 1, figsize=(16, 7),
+        sharex=True,
+        gridspec_kw={'height_ratios': [0.5, 3]},
+    )
+    fig2.suptitle('Traçado Ideal — Média das Voltas de Ouro', fontsize=14, fontweight='bold')
 
-    ax2.plot(eixo_norm, medias['acel'],  color='orange', linewidth=2, label='Acelerador')
-    ax2.plot(eixo_norm, medias['freio'], color='green',  linewidth=2, label='Freio')
-    ax2.fill_between(eixo_norm, medias['acel'] - sigmas['acel'], medias['acel'] + sigmas['acel'],  alpha=0.12, color='orange')
-    ax2.fill_between(eixo_norm, medias['freio'] - sigmas['freio'], medias['freio'] + sigmas['freio'], alpha=0.12, color='green')
-    ax2.set_title('Pedais'); ax2.set_ylabel('%'); ax2.legend(loc='upper right'); ax2.grid(True, alpha=0.3)
+    # Faixa de contexto Reta / Curva
+    ax_ctx.fill_between(eixo_norm, 0, 1, where=eh_reta,  color='#2ecc71', alpha=0.5, label='Reta')
+    ax_ctx.fill_between(eixo_norm, 0, 1, where=eh_curva, color='#3498db', alpha=0.5, label='Curva')
+    ax_ctx.set_yticks([])
+    ax_ctx.set_title('Contexto da Pista', fontsize=9)
+    ax_ctx.legend(loc='upper right', fontsize=8)
+    ax_ctx.grid(False)
 
-    ax3.plot(eixo_norm, medias['volante'], color='black', linewidth=2)
-    ax3.fill_between(eixo_norm,
-                     medias['volante'] - sigmas['volante'],
-                     medias['volante'] + sigmas['volante'],
-                     alpha=0.15, color='black', label='±1σ')
-    ax3.set_title('Esterçamento do Volante'); ax3.set_ylabel('Graus')
-    ax3.legend(loc='upper right'); ax3.grid(True, alpha=0.3)
-    ax3.set_xlabel('Progresso da Volta (%)')
+    # Esterçamento médio ± 1σ
+    ax_steer.plot(eixo_norm, medias['volante'], color='black', linewidth=2, label='Média')
+    ax_steer.fill_between(
+        eixo_norm,
+        medias['volante'] - sigmas['volante'],
+        medias['volante'] + sigmas['volante'],
+        alpha=0.15, color='black', label='±1σ',
+    )
+    ax_steer.set_title('Esterçamento do Volante')
+    ax_steer.set_ylabel('Graus')
+    ax_steer.set_xlabel('Progresso da Volta (%)')
+    ax_steer.legend(loc='upper right')
+    ax_steer.grid(True, alpha=0.3)
+
     plt.tight_layout()
     plt.savefig(ARQUIVO_GRAFICO_IDEAL, dpi=150, bbox_inches='tight')
     plt.show()

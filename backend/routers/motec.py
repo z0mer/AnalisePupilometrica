@@ -63,4 +63,15 @@ async def listar_voltas_motec(motec_csv: UploadFile = File(...)):
             }
         )
 
-    return voltas
+    # Detecta o Marco Zero (primeira queda de Car Pos Norm, ou None se ausente)
+    t_sync_motec_s = None
+    car_pos_col = clean_col(df, ["Car Pos Norm", "car_pos_norm", "CarPosNorm"])
+    if car_pos_col is not None:
+        df["_car_pos"] = car_pos_col
+        df_sync = df.dropna(subset=["_car_pos", "_time"])
+        queda = df_sync["_car_pos"].diff() < -0.5
+        if queda.any():
+            idx = queda.idxmax()
+            t_sync_motec_s = round(float(df_sync.loc[idx, "_time"]), 4)
+
+    return {"voltas": voltas, "t_sync_motec_s": t_sync_motec_s}

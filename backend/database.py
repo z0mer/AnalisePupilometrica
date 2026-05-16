@@ -55,6 +55,17 @@ def create_tables() -> None:
 
     Base.metadata.create_all(bind=engine, checkfirst=True)
 
+    # Adiciona colunas novas sem Alembic (IF NOT EXISTS é idempotente no Postgres)
+    _migracao_colunas = [
+        "ALTER TABLE parametros_sync ADD COLUMN IF NOT EXISTS dados_pupil BYTEA",
+        "ALTER TABLE parametros_sync ADD COLUMN IF NOT EXISTS dados_motec BYTEA",
+        "ALTER TABLE parametros_sync ADD COLUMN IF NOT EXISTS dados_fixacoes BYTEA",
+    ]
+    with engine.connect() as conn:
+        for sql in _migracao_colunas:
+            conn.execute(text(sql))
+        conn.commit()
+
 
 def check_connection() -> bool:
     """Verifica se a conexão com o NeonDB está ativa. Útil em health-checks."""

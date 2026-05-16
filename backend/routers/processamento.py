@@ -9,6 +9,7 @@ Endpoint de processamento completo de sessão:
 """
 from __future__ import annotations
 
+import shutil
 from typing import List, Optional
 
 import numpy as np
@@ -78,6 +79,15 @@ async def processar_sessao(
     sessao_nome = sessao_nome.strip()
     sessao = get_or_create_sessao(db, nome=sessao_nome)
 
+    # Limpa saídas anteriores para evitar arquivos órfãos de execuções passadas
+    # (ex.: pilotos/voltas que existiam antes mas não fazem parte desta execução).
+    for sub in ("volta_ideal", "graficos_voltas", "graficos_tr"):
+        d = SAIDAS_DIR / sub
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+        d.mkdir(parents=True, exist_ok=True)
+    print(f"Saidas limpas em: {SAIDAS_DIR}")
+
     # -------------------------------------------------------------------
     # Etapa 1 — Volta de ouro por piloto
     # -------------------------------------------------------------------
@@ -107,14 +117,23 @@ async def processar_sessao(
 
         volta_ouro = (
             db.query(Volta)
-            .filter_by(piloto_id=piloto_obj.id, eh_volta_ouro=True)
+            .filter(
+                Volta.sessao_id == sessao.id,
+                Volta.piloto_id == piloto_obj.id,
+                Volta.eh_volta_ouro == True,
+                Volta.frame_ini_pupil.isnot(None),
+                Volta.frame_fim_pupil.isnot(None),
+            )
             .order_by(Volta.criado_em.desc())
             .first()
         )
-        if not volta_ouro or volta_ouro.frame_ini_pupil is None:
+        if not volta_ouro:
             raise HTTPException(
                 status_code=422,
-                detail=f"Frames da volta de ouro ausentes para '{nome_piloto}'. Cadastre via /api/cadastro.",
+                detail=(
+                    f"Volta de ouro com frames de pupila ausente para '{nome_piloto}' "
+                    f"na sessão '{sessao_nome}'. Cadastre via /api/cadastro."
+                ),
             )
 
         frame_sync = ps.frame_sync
@@ -125,8 +144,37 @@ async def processar_sessao(
                 detail=f"t_sync_motec_s ausente para '{nome_piloto}'.",
             )
 
-        pupil_bytes = await pupil_csvs[i].read()
-        motec_bytes = await motec_csvs[i].read()
+        # Lê bytes do upload (se houver) ou dos dados salvos no banco
+        tem_upload = i < len(pupil_csvs) and bool(pupil_csvs[i].filename)
+
+        if tem_upload:
+            pupil_bytes = await pupil_csvs[i].read()
+            motec_bytes = await motec_csvs[i].read()
+            # Persiste no banco para reuso futuro
+            ps.dados_pupil = pupil_bytes
+            ps.dados_motec = motec_bytes
+            db.flush()
+            print(f"   [{nome_piloto}] CSVs salvos no banco.")
+        else:
+            if not ps.dados_pupil:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Sem CSV de pupila salvo para '{nome_piloto}'. "
+                        "Faça upload do arquivo pelo menos uma vez."
+                    ),
+                )
+            if not ps.dados_motec:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Sem CSV de MoTeC salvo para '{nome_piloto}'. "
+                        "Faça upload do arquivo pelo menos uma vez."
+                    ),
+                )
+            pupil_bytes = bytes(ps.dados_pupil)
+            motec_bytes = bytes(ps.dados_motec)
+            print(f"   [{nome_piloto}] Usando CSVs do banco.")
 
         pupil_df = carregar_pupil(pupil_bytes)
         motec_df = carregar_motec(motec_bytes)
@@ -144,9 +192,13 @@ async def processar_sessao(
         # Fixações e blinks (opcionais)
         df_fix = None
         df_blink = None
-        if fixacoes_csvs and i < len(fixacoes_csvs) and fixacoes_csvs[i]:
+        if fixacoes_csvs and i < len(fixacoes_csvs) and fixacoes_csvs[i] and fixacoes_csvs[i].filename:
             fix_bytes = await fixacoes_csvs[i].read()
+            ps.dados_fixacoes = fix_bytes
+            db.flush()
             df_fix = carregar_fixacoes(fix_bytes, t_sync_p, escala)
+        elif ps.dados_fixacoes:
+            df_fix = carregar_fixacoes(bytes(ps.dados_fixacoes), t_sync_p, escala)
         if blinks_csvs and i < len(blinks_csvs) and blinks_csvs[i]:
             blink_bytes = await blinks_csvs[i].read()
             df_blink = carregar_blinks(blink_bytes, t_sync_p, escala)
@@ -176,20 +228,14 @@ async def processar_sessao(
             t_pupila = np.array([])
             diam_pupila = np.array([])
 
-        # Persistir série temporal
-        volta_db_ouro = (
-            db.query(Volta)
-            .filter_by(piloto_id=piloto_obj.id, eh_volta_ouro=True)
-            .order_by(Volta.criado_em.desc())
-            .first()
-        )
-        upsert_serie_temporal(db, volta_db_ouro.id, "motec", {
+        # Persistir série temporal (reaproveita volta_ouro já obtido acima)
+        upsert_serie_temporal(db, volta_ouro.id, "motec", {
             "t":       df_ouro["tempo_sync"].tolist(),
             "acel":    df_ouro["acel"].tolist() if "acel" in df_ouro.columns else [],
             "freio":   df_ouro["freio"].tolist() if "freio" in df_ouro.columns else [],
             "volante": df_ouro["volante"].tolist() if "volante" in df_ouro.columns else [],
         })
-        upsert_serie_temporal(db, volta_db_ouro.id, "pupila", {
+        upsert_serie_temporal(db, volta_ouro.id, "pupila", {
             "t":    df_ouro["tempo_sync"].tolist(),
             "diam": df_ouro["diam_suav"].tolist(),
         })
@@ -216,6 +262,10 @@ async def processar_sessao(
     volta_ideal_dir.mkdir(parents=True, exist_ok=True)
     (volta_ideal_dir / "volta_ideal.png").write_bytes(png_ideal_bytes)
     print(f"Tracado ideal salvo em: {volta_ideal_dir / 'volta_ideal.png'}")
+
+    csv_ideal_path = volta_ideal_dir / "tracado_ideal.csv"
+    df_ideal.to_csv(csv_ideal_path, index=False)
+    print(f"CSV do tracado ideal salvo em: {csv_ideal_path}")
 
     pilotos_ids = [r["piloto_id"] for r in resultados]
     upsert_tracado_ideal(db, sessao.id, df_ideal, pilotos_ids)
@@ -302,6 +352,7 @@ async def processar_sessao(
                     diam_pupila=r["diam_pupila"],
                     df_fix_sync=df_fix_sync,
                     df_blinks=df_blinks,
+                    imagens_voltas=imagens,
                 )
 
                 if pdf_bytes:
@@ -356,6 +407,7 @@ async def processar_sessao(
         "sessao": sessao_nome,
         "pilotos_processados": len(resultados),
         "tracado_ideal_url": "/static/volta_ideal/volta_ideal.png",
+        "tracado_ideal_csv": "/static/volta_ideal/tracado_ideal.csv",
         "graficos_voltas": graficos_gerados,
         "total_anomalias": total_anomalias,
         "csv_geral_url": csv_geral_url,

@@ -727,14 +727,11 @@ def processar_anomalias_piloto(
 
         ax_pedal.plot(eixo_pct, acel_v, color="orange", linewidth=1.2, label="Acelerador")
         ax_pedal.plot(eixo_pct, freio_v, color="green", linewidth=1.2, label="Freio")
-        ax_pedal.plot(eixo_pct, acel_medio, color="orange", linewidth=1.5, linestyle="--", alpha=0.5, label="Acel ideal")
-        ax_pedal.plot(eixo_pct, freio_medio, color="green", linewidth=1.5, linestyle="--", alpha=0.5, label="Freio ideal")
         ax_pedal.set_ylabel("%", fontsize=9)
         ax_pedal.legend(loc="upper right", fontsize=7)
         ax_pedal.grid(True, alpha=0.3)
 
         ax_pupil.plot(eixo_pct, pup_v, color="purple", linewidth=1.2, label="Pupila")
-        ax_pupil.plot(eixo_pct, pupila_medio, color="purple", linewidth=1.5, linestyle="--", alpha=0.5, label="Pupila ideal")
         ax_pupil.set_ylabel("Diametro (mm)", fontsize=9)
         ax_pupil.set_xlabel("Progresso da Volta (%)", fontsize=10)
         ax_pupil.legend(loc="upper right", fontsize=7)
@@ -839,7 +836,7 @@ def _calcular_metricas_blinks(
         if vel_disponivel:
             mask_v = (t_motec >= b_ini) & (t_motec <= b_fim)
             if mask_v.sum() >= 2:
-                distancia_total += float(np.trapz(vel_ms[mask_v], t_motec[mask_v]))
+                distancia_total += float(np.trapezoid(vel_ms[mask_v], t_motec[mask_v]))
     return round(tempo_total, 4), round(distancia_total, 4)
 
 
@@ -924,6 +921,7 @@ def processar_tr_piloto(
     diam_pupila: np.ndarray,
     df_fix_sync: pd.DataFrame,
     df_blinks: pd.DataFrame,
+    imagens_voltas: dict[str, bytes] | None = None,
 ) -> tuple[list[dict], bytes | None, bytes]:
     """
     Processa a análise de Tempo de Reação para cada anomalia de um piloto.
@@ -1089,13 +1087,14 @@ def processar_tr_piloto(
 
         # Gráfico da anomalia individual (em memória)
         cor = CORES_TIPO[tipo]
+        steer_sigma = df_ideal["steering_sigma"].values if "steering_sigma" in df_ideal.columns else None
         fig_bytes = _gerar_grafico_anomalia_individual(
             nome, tipo, volta_num, anom_num,
             t_m_jan, s_jan, a_jan, f_jan,
             t_p_jan, d_jan,
             t_anom_ini, t_anom_fim,
             df_fix_janela,
-            eixo_pct, steer_med, ini_pct, fim_pct,
+            eixo_pct, steer_med, steer_sigma, ini_pct, fim_pct,
             t_jan_ini, t_jan_fim,
             onsets_validos, ordem_reacao, primeiro_sinal,
             d_antes, delta_d,
@@ -1184,6 +1183,7 @@ def processar_tr_piloto(
             diam_pupila_total=diam_pupila,
             df_fix_sync=df_fix_sync,
             lista_voltas=lista_voltas_unicas,
+            imagens_voltas=imagens_voltas,
         )
 
     return registros_csv, pdf_bytes, csv_bytes
@@ -1232,29 +1232,88 @@ def _gerar_grafico_anomalia_individual(
     t_p_jan, d_jan,
     t_anom_ini, t_anom_fim,
     df_fix_janela,
-    eixo_pct, steer_med, ini_pct, fim_pct,
+    eixo_pct, steer_med, steer_sigma, ini_pct, fim_pct,
     t_jan_ini, t_jan_fim,
     onsets_validos, ordem_reacao, primeiro_sinal,
     d_antes, delta_d,
     cor,
 ) -> bytes:
+    """
+    Gera gráfico de anomalia individual com 4 painéis (de cima para baixo):
+      1. Steering do piloto vs média ideal (± 1σ) + marcadores de TR
+      2. Desvio em relação ao ideal (delta steering)
+      3. Pupila (diâmetro suavizado + fixações)
+      4. Pedais (acelerador e freio)
+    """
     cores_onset = {
         "Steering": "#2980b9", "Acelerador": "#e67e22",
         "Freio": "#27ae60", "Pupila": "#8e44ad",
     }
     t_primeiro = onsets_validos.get(primeiro_sinal) if primeiro_sinal else None
 
-    fig = plt.figure(figsize=(14, 10))
+    fig = plt.figure(figsize=(14, 12))
     fig.suptitle(
         f"Anomalia {tipo}{anom_num} - Volta {volta_num} - {nome}\n"
         f"{LABELS_TIPO.get(tipo, tipo)} | {ini_pct:.1f}% - {fim_pct:.1f}%",
         fontsize=10, fontweight="bold",
     )
-    gs = gridspec.GridSpec(3, 1, height_ratios=[1.4, 1.2, 2.0], hspace=0.45)
-    ax_pup = fig.add_subplot(gs[0])
-    ax_pedal = fig.add_subplot(gs[1], sharex=ax_pup)
-    ax_steer = fig.add_subplot(gs[2], sharex=ax_pup)
+    gs = gridspec.GridSpec(4, 1, height_ratios=[2.5, 1.2, 1.4, 1.2], hspace=0.50)
+    ax_steer = fig.add_subplot(gs[0])
+    ax_desvio = fig.add_subplot(gs[1], sharex=ax_steer)
+    ax_pup = fig.add_subplot(gs[2], sharex=ax_steer)
+    ax_pedal = fig.add_subplot(gs[3], sharex=ax_steer)
 
+    # ── Painel 1: Steering piloto vs ideal ──────────────────────────────────
+    steer_ideal_interp: np.ndarray | None = None
+    if len(eixo_pct) > 0 and len(t_m_jan) > 0:
+        mask_ideal = (eixo_pct >= max(0, ini_pct - 5)) & (eixo_pct <= min(100, fim_pct + 5))
+        if mask_ideal.any():
+            t_ideal_jan = np.linspace(t_jan_ini, t_jan_fim, mask_ideal.sum())
+            med_seg = steer_med[mask_ideal]
+            ax_steer.plot(t_ideal_jan, med_seg, color="gray", linewidth=2,
+                          linestyle="--", label="Ideal (media)", zorder=3)
+            if steer_sigma is not None:
+                sig_seg = steer_sigma[mask_ideal]
+                ax_steer.fill_between(
+                    t_ideal_jan,
+                    med_seg - sig_seg, med_seg + sig_seg,
+                    color="gray", alpha=0.15, label="±1σ ideal",
+                )
+            # Interpola ideal no eixo de tempo do piloto para calcular desvio
+            steer_ideal_interp = np.interp(t_m_jan, t_ideal_jan, med_seg)
+
+    ax_steer.plot(t_m_jan, s_jan, color="#2980b9", linewidth=1.6, label="Steering piloto", zorder=5)
+    ax_steer.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.20, label="Anomalia")
+    ax_steer.axvline(t_anom_ini, color=cor, linewidth=2.2, linestyle="--",
+                     label=f"Inicio ({t_anom_ini:.2f}s)")
+    for sinal in ordem_reacao:
+        t_on = onsets_validos[sinal]
+        tr = t_on - t_primeiro if t_primeiro is not None else 0.0
+        ax_steer.axvline(t_on, color=cores_onset[sinal], linewidth=1.6, linestyle=":",
+                         alpha=0.9, label=f"{sinal} (TR={tr:+.3f}s)")
+    ordem_str = " -> ".join(ordem_reacao) if ordem_reacao else "N/D"
+    ax_steer.set_title(f"Media x Volta | Ordem reacao: {ordem_str}", fontsize=8)
+    ax_steer.set_ylabel("Steering (graus)", fontsize=8)
+    ax_steer.legend(loc="upper right", fontsize=6)
+    ax_steer.grid(True, alpha=0.3)
+
+    # ── Painel 2: Desvio em relação ao ideal ────────────────────────────────
+    ax_desvio.axhline(0, color="gray", linewidth=1, linestyle="--")
+    if steer_ideal_interp is not None and len(s_jan) == len(steer_ideal_interp):
+        desvio = s_jan - steer_ideal_interp
+        ax_desvio.fill_between(t_m_jan, 0, desvio, where=(desvio > 0),
+                               color="#e74c3c", alpha=0.55, label="Acima do ideal")
+        ax_desvio.fill_between(t_m_jan, 0, desvio, where=(desvio < 0),
+                               color="#3498db", alpha=0.55, label="Abaixo do ideal")
+        ax_desvio.plot(t_m_jan, desvio, color="gray", linewidth=0.7, alpha=0.5)
+    ax_desvio.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
+    ax_desvio.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
+    ax_desvio.set_title("Desvio em relacao ao Ideal", fontsize=8)
+    ax_desvio.set_ylabel("Delta (graus)", fontsize=8)
+    ax_desvio.legend(loc="upper right", fontsize=6)
+    ax_desvio.grid(True, alpha=0.3)
+
+    # ── Painel 3: Pupila ────────────────────────────────────────────────────
     if len(t_p_jan) > 1:
         ax_pup.plot(t_p_jan, d_jan, color="purple", linewidth=1.6, label="Pupila", zorder=4)
         if not np.isnan(d_antes):
@@ -1279,41 +1338,18 @@ def _gerar_grafico_anomalia_individual(
     ax_pup.legend(loc="upper right", fontsize=6)
     ax_pup.grid(True, alpha=0.3)
 
+    # ── Painel 4: Pedais ────────────────────────────────────────────────────
     ax_pedal.plot(t_m_jan, a_jan, color="orange", linewidth=1.4, label="Acelerador")
     ax_pedal.plot(t_m_jan, f_jan, color="green", linewidth=1.4, label="Freio")
     ax_pedal.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
     ax_pedal.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
     ax_pedal.set_ylabel("%", fontsize=8)
     ax_pedal.set_title("Pedais", fontsize=8)
+    ax_pedal.set_xlabel("Tempo Sincronizado (s)", fontsize=8)
     ax_pedal.legend(loc="upper right", fontsize=6)
     ax_pedal.grid(True, alpha=0.3)
 
-    if len(eixo_pct) > 0:
-        mask_ideal = (eixo_pct >= max(0, ini_pct - 5)) & (eixo_pct <= min(100, fim_pct + 5))
-        if mask_ideal.any():
-            t_ideal_jan = np.linspace(t_jan_ini, t_jan_fim, mask_ideal.sum())
-            ax_steer.plot(t_ideal_jan, steer_med[mask_ideal], color="gray", linewidth=2,
-                          linestyle="--", label="Ideal", zorder=3)
-
-    ax_steer.plot(t_m_jan, s_jan, color="#2980b9", linewidth=1.6, label="Steering piloto", zorder=5)
-    ax_steer.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.20, label="Anomalia")
-    ax_steer.axvline(t_anom_ini, color=cor, linewidth=2.2, linestyle="--",
-                     label=f"Inicio ({t_anom_ini:.2f}s)")
-
-    for sinal in ordem_reacao:
-        t_on = onsets_validos[sinal]
-        tr = t_on - t_primeiro if t_primeiro is not None else 0.0
-        ax_steer.axvline(t_on, color=cores_onset[sinal], linewidth=1.6, linestyle=":",
-                         alpha=0.9, label=f"{sinal} (TR={tr:+.3f}s)")
-
-    ordem_str = " -> ".join(ordem_reacao) if ordem_reacao else "N/D"
-    ax_steer.set_title(f"Steering | Ordem: {ordem_str}", fontsize=8)
-    ax_steer.set_ylabel("Steering (graus)", fontsize=8)
-    ax_steer.set_xlabel("Tempo Sincronizado (s)", fontsize=8)
-    ax_steer.legend(loc="upper right", fontsize=6)
-    ax_steer.grid(True, alpha=0.3)
     plt.tight_layout()
-
     b = fig_para_bytes(fig, dpi=130)
     plt.close(fig)
     return b

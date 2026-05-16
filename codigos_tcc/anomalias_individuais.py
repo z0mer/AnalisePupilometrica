@@ -38,6 +38,7 @@ from codigos_tcc.configuracao import (
     ARQUIVO_IDEAL,
     ARQUIVO_RELATORIO_TR,
     GRAFICOS_TR_DIR,
+    GRAFICOS_VOLTAS_DIR,
     PILOTOS,
     validar_arquivos_base,
 )
@@ -686,7 +687,7 @@ def calcular_metricas_blinks(df_blinks, t_jan_ini, t_jan_fim, t_motec, vel_ms):
         if vel_disponivel:
             mask_v = (t_motec >= b_ini) & (t_motec <= b_fim)
             if mask_v.sum() >= 2:
-                distancia_total += float(np.trapz(vel_ms[mask_v], t_motec[mask_v]))
+                distancia_total += float(np.trapezoid(vel_ms[mask_v], t_motec[mask_v]))
     return round(tempo_total, 4), round(distancia_total, 4)
 
 
@@ -725,7 +726,15 @@ def gerar_grafico_anomalia(
     onsets_validos, ordem_reacao, primeiro_sinal,
     d_antes, delta_d,
     cor,
+    steer_sigma=None,
 ):
+    """
+    Gráfico de anomalia individual com 4 painéis (de cima para baixo):
+      1. Média x Volta — steering piloto vs ideal (±1σ) + marcadores de TR
+      2. Desvio         — delta em relação ao ideal
+      3. Pupila         — diâmetro suavizado + fixações
+      4. Pedais         — acelerador e freio
+    """
     cores_onset = {
         "Steering": "#2980b9",
         "Acelerador": "#e67e22",
@@ -734,61 +743,35 @@ def gerar_grafico_anomalia(
     }
     t_primeiro = onsets_validos.get(primeiro_sinal) if primeiro_sinal else None
 
-    fig = plt.figure(figsize=(14, 10))
+    fig = plt.figure(figsize=(14, 12))
     fig.suptitle(
         f"Anomalia {tipo}{anom_num} - Volta {volta_num} - {nome}\n"
         f"{LABELS_TIPO.get(tipo, tipo)} | {ini_pct:.1f}% - {fim_pct:.1f}%",
         fontsize=10, fontweight="bold",
     )
-    gs = gridspec.GridSpec(3, 1, height_ratios=[1.4, 1.2, 2.0], hspace=0.45)
-    ax_pup = fig.add_subplot(gs[0])
-    ax_pedal = fig.add_subplot(gs[1], sharex=ax_pup)
-    ax_steer = fig.add_subplot(gs[2], sharex=ax_pup)
+    gs = gridspec.GridSpec(4, 1, height_ratios=[2.5, 1.2, 1.4, 1.2], hspace=0.50)
+    ax_steer = fig.add_subplot(gs[0])
+    ax_desvio = fig.add_subplot(gs[1], sharex=ax_steer)
+    ax_pup    = fig.add_subplot(gs[2], sharex=ax_steer)
+    ax_pedal  = fig.add_subplot(gs[3], sharex=ax_steer)
 
-    # Pupila
-    if len(t_p_jan) > 1:
-        ax_pup.plot(t_p_jan, d_jan, color="purple", linewidth=1.6, label="Pupila", zorder=4)
-        if not np.isnan(d_antes):
-            ax_pup.axhline(d_antes, color="gray", linewidth=1, linestyle=":",
-                           label=f"Baseline: {d_antes:.2f}mm")
-        if not df_fix_janela.empty and "t_sync" in df_fix_janela.columns:
-            first_fix = True
-            for _, fx in df_fix_janela.iterrows():
-                lbl = "Fixacao" if first_fix else "_"
-                ax_pup.axvline(fx["t_sync"], color="cyan", linewidth=0.9, alpha=0.7,
-                               linestyle="-.", label=lbl)
-                first_fix = False
-        n_fix = len(df_fix_janela) if not df_fix_janela.empty else 0
-        sinal_d = "+" if (not np.isnan(delta_d) and delta_d > 0) else ""
-        reacao_p = "dilatou" if (not np.isnan(delta_d) and delta_d > 0) else "contraiu"
-        titulo_pup = "Pupila"
-        if not np.isnan(delta_d):
-            titulo_pup += f" | Delta={sinal_d}{delta_d:.2f}mm ({reacao_p})"
-        titulo_pup += f" | {n_fix} fixacao(oes)"
-        ax_pup.set_title(titulo_pup, fontsize=8)
-    ax_pup.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
-    ax_pup.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
-    ax_pup.set_ylabel("Diam (mm)", fontsize=8)
-    ax_pup.legend(loc="upper right", fontsize=6)
-    ax_pup.grid(True, alpha=0.3)
-
-    # Pedais
-    ax_pedal.plot(t_m_jan, a_jan, color="orange", linewidth=1.4, label="Acelerador")
-    ax_pedal.plot(t_m_jan, f_jan, color="green", linewidth=1.4, label="Freio")
-    ax_pedal.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
-    ax_pedal.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
-    ax_pedal.set_ylabel("%", fontsize=8)
-    ax_pedal.set_title("Pedais", fontsize=8)
-    ax_pedal.legend(loc="upper right", fontsize=6)
-    ax_pedal.grid(True, alpha=0.3)
-
-    # Steering + ideal overlay
-    if len(eixo_pct) > 0:
+    # ── Painel 1: Média x Volta (steering piloto vs ideal) ───────────────────
+    steer_ideal_interp = None
+    if len(eixo_pct) > 0 and len(t_m_jan) > 0:
         mask_ideal = (eixo_pct >= max(0, ini_pct - 5)) & (eixo_pct <= min(100, fim_pct + 5))
         if mask_ideal.any():
             t_ideal_jan = np.linspace(t_jan_ini, t_jan_fim, mask_ideal.sum())
-            ax_steer.plot(t_ideal_jan, steer_med[mask_ideal], color="gray", linewidth=2,
-                          linestyle="--", label="Ideal", zorder=3)
+            med_seg = steer_med[mask_ideal]
+            ax_steer.plot(t_ideal_jan, med_seg, color="gray", linewidth=2,
+                          linestyle="--", label="Ideal (media)", zorder=3)
+            if steer_sigma is not None:
+                sig_seg = steer_sigma[mask_ideal]
+                ax_steer.fill_between(
+                    t_ideal_jan,
+                    med_seg - sig_seg, med_seg + sig_seg,
+                    color="gray", alpha=0.15, label="±1σ ideal",
+                )
+            steer_ideal_interp = np.interp(t_m_jan, t_ideal_jan, med_seg)
 
     ax_steer.plot(t_m_jan, s_jan, color="#2980b9", linewidth=1.6, label="Steering piloto", zorder=5)
     ax_steer.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.20, label="Anomalia")
@@ -815,11 +798,64 @@ def gerar_grafico_anomalia(
             )
 
     ordem_str = " -> ".join(ordem_reacao) if ordem_reacao else "N/D"
-    ax_steer.set_title(f"Steering | Ordem: {ordem_str}", fontsize=8)
+    ax_steer.set_title(f"Media x Volta | Ordem reacao: {ordem_str}", fontsize=8)
     ax_steer.set_ylabel("Steering (graus)", fontsize=8)
-    ax_steer.set_xlabel("Tempo Sincronizado (s)", fontsize=8)
     ax_steer.legend(loc="upper right", fontsize=6)
     ax_steer.grid(True, alpha=0.3)
+
+    # ── Painel 2: Desvio em relação ao ideal ────────────────────────────────
+    ax_desvio.axhline(0, color="gray", linewidth=1, linestyle="--")
+    if steer_ideal_interp is not None and len(s_jan) == len(steer_ideal_interp):
+        desvio = s_jan - steer_ideal_interp
+        ax_desvio.fill_between(t_m_jan, 0, desvio, where=(desvio > 0),
+                               color="#e74c3c", alpha=0.55, label="Acima do ideal")
+        ax_desvio.fill_between(t_m_jan, 0, desvio, where=(desvio < 0),
+                               color="#3498db", alpha=0.55, label="Abaixo do ideal")
+        ax_desvio.plot(t_m_jan, desvio, color="gray", linewidth=0.7, alpha=0.5)
+    ax_desvio.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
+    ax_desvio.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
+    ax_desvio.set_title("Desvio em relacao ao Ideal", fontsize=8)
+    ax_desvio.set_ylabel("Delta (graus)", fontsize=8)
+    ax_desvio.legend(loc="upper right", fontsize=6)
+    ax_desvio.grid(True, alpha=0.3)
+
+    # ── Painel 3: Pupila ────────────────────────────────────────────────────
+    if len(t_p_jan) > 1:
+        ax_pup.plot(t_p_jan, d_jan, color="purple", linewidth=1.6, label="Pupila", zorder=4)
+        if not np.isnan(d_antes):
+            ax_pup.axhline(d_antes, color="gray", linewidth=1, linestyle=":",
+                           label=f"Baseline: {d_antes:.2f}mm")
+        if not df_fix_janela.empty and "t_sync" in df_fix_janela.columns:
+            first_fix = True
+            for _, fx in df_fix_janela.iterrows():
+                lbl = "Fixacao" if first_fix else "_"
+                ax_pup.axvline(fx["t_sync"], color="cyan", linewidth=0.9, alpha=0.7,
+                               linestyle="-.", label=lbl)
+                first_fix = False
+        n_fix = len(df_fix_janela) if not df_fix_janela.empty else 0
+        sinal_d = "+" if (not np.isnan(delta_d) and delta_d > 0) else ""
+        reacao_p = "dilatou" if (not np.isnan(delta_d) and delta_d > 0) else "contraiu"
+        titulo_pup = "Pupila"
+        if not np.isnan(delta_d):
+            titulo_pup += f" | Delta={sinal_d}{delta_d:.2f}mm ({reacao_p})"
+        titulo_pup += f" | {n_fix} fixacao(oes)"
+        ax_pup.set_title(titulo_pup, fontsize=8)
+    ax_pup.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
+    ax_pup.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
+    ax_pup.set_ylabel("Diam (mm)", fontsize=8)
+    ax_pup.legend(loc="upper right", fontsize=6)
+    ax_pup.grid(True, alpha=0.3)
+
+    # ── Painel 4: Pedais ────────────────────────────────────────────────────
+    ax_pedal.plot(t_m_jan, a_jan, color="orange", linewidth=1.4, label="Acelerador")
+    ax_pedal.plot(t_m_jan, f_jan, color="green", linewidth=1.4, label="Freio")
+    ax_pedal.axvspan(t_anom_ini, t_anom_fim, color=cor, alpha=0.15)
+    ax_pedal.axvline(t_anom_ini, color=cor, linewidth=1.8, linestyle="--")
+    ax_pedal.set_ylabel("%", fontsize=8)
+    ax_pedal.set_title("Pedais", fontsize=8)
+    ax_pedal.set_xlabel("Tempo Sincronizado (s)", fontsize=8)
+    ax_pedal.legend(loc="upper right", fontsize=6)
+    ax_pedal.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
@@ -1178,6 +1214,40 @@ def gerar_pdf_piloto(
         historia.append(p)
     historia.append(Spacer(1, 0.3 * cm))
 
+    # ── Seção: Gráfico geral por volta (visão completa) ───────────────────────
+    # Busca as imagens geradas por anomalias.py salvas em graficos_voltas/
+    imgs_volta = sorted(GRAFICOS_VOLTAS_DIR.glob(f"volta_*_{nome}.png"))
+    if imgs_volta:
+        historia.append(PageBreak())
+        historia.append(Paragraph("Analise Geral por Volta", e_sec))
+        historia.append(HRFlowable(width="100%", thickness=2,
+                                   color=colors.HexColor("#2980b9"), spaceAfter=8))
+        historia.append(Paragraph(
+            "Para cada volta sao exibidos (de cima para baixo): contexto da pista "
+            "(reta/curva), esterçamento do piloto vs media ideal (±1σ), "
+            "desvio em relacao ao ideal, pedais (acelerador e freio com referencia ideal) "
+            "e diametro pupilar. As anomalias detectadas estao destacadas em cor.",
+            e_analise,
+        ))
+        for img_path in imgs_volta:
+            # Extrai numero da volta do nome "volta_01_Nome.png"
+            try:
+                volta_n = int(img_path.stem.split("_")[1])
+            except (IndexError, ValueError):
+                volta_n = 0
+            historia.append(PageBreak())
+            historia.append(Paragraph(f"Volta {volta_n}", e_sec))
+            historia.append(HRFlowable(width="100%", thickness=1,
+                                       color=colors.HexColor("#2980b9"), spaceAfter=6))
+            historia.append(
+                Image(str(img_path), width=largura_pagina - 3 * cm, height=14 * cm)
+            )
+            historia.append(Spacer(1, 0.2 * cm))
+            historia.append(Paragraph(
+                f"Relatorio TCC - {nome} | Volta {volta_n} | {data_hora}",
+                e_rodape,
+            ))
+
     # ── Páginas de fixação por volta ───────────────────────────────────────────
     for v_info in lista_voltas:
         fig_fix = gerar_grafico_fixacoes_volta(
@@ -1380,12 +1450,15 @@ def executar():
     if not os.path.exists(ARQUIVO_IDEAL):
         raise Exception("Rode o Codigo 1 primeiro.")
     if not os.path.exists(ARQUIVO_ANOMALIAS):
-        raise Exception("Rode o Codigo 2 primeiro.")
+        raise Exception("Rode o Codigo 3 (anomalias.py) primeiro para gerar anomalias_detectadas.csv.")
+
+    sessao_nome = input("Nome da sessao (deve coincidir com sincronizacao.py, ex: 'Interlagos'): ").strip() or "Interlagos"
 
     df_ideal = pd.read_csv(ARQUIVO_IDEAL)
     df_anom = pd.read_csv(ARQUIVO_ANOMALIAS)
     eixo_pct = df_ideal["progresso_pct"].values
     steer_med = df_ideal["steering_medio"].values
+    steer_sigma = df_ideal["steering_sigma"].values if "steering_sigma" in df_ideal.columns else None
 
     print(f"Baseline: {len(eixo_pct)} pontos")
     print(f"Anomalias para analisar: {len(df_anom)}")
@@ -1439,7 +1512,22 @@ def executar():
 
         # Sincronização
         t_sync_m = float(df_anom_piloto["t_sync_m"].iloc[0])
-        frame_sync = int(input(f"\nFRAME do Marco Zero no Pupil Player [{nome}]: ").strip())
+        from backend.database import SessionLocal
+        from backend.db_ops import get_or_create_piloto as _get_piloto
+        from backend.db_ops import get_or_create_sessao as _get_sessao
+        from backend.models import ParametrosSync
+        with SessionLocal() as _db:
+            _sessao = _get_sessao(_db, sessao_nome)
+            _piloto = _get_piloto(_db, nome)
+            _params = _db.query(ParametrosSync).filter_by(
+                sessao_id=_sessao.id, piloto_id=_piloto.id
+            ).first()
+            if not _params or _params.frame_sync is None:
+                raise Exception(
+                    f"frame_sync ausente para '{nome}'. Execute sincronizacao.py antes."
+                )
+            frame_sync = _params.frame_sync
+        print(f"  [{nome}] frame_sync lido do banco: {frame_sync}")
         t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
 
         df_pupil[c_p_t] = df_pupil[c_p_t].apply(force_float)
@@ -1656,6 +1744,7 @@ def executar():
                 onsets_validos, ordem_reacao, primeiro_sinal,
                 d_antes, delta_d,
                 cor,
+                steer_sigma=steer_sigma,
             )
 
             dado = {
@@ -1747,7 +1836,7 @@ def executar():
     # Exportar base consolidada para ANOVA
     consolidar_csvs_anova(csvs_individuais, ARQUIVO_BASE_ANOVA)
 
-    _persistir_banco_individuais(registros_csv)
+    _persistir_banco_individuais(registros_csv, sessao_nome)
 
     print(f"\n{'=' * 60}")
     print(f"PDFs gerados: {len(pdfs_gerados)}")
@@ -1756,7 +1845,7 @@ def executar():
     print(f"{'=' * 60}")
 
 
-def _persistir_banco_individuais(registros_csv):
+def _persistir_banco_individuais(registros_csv, sessao_nome="Interlagos"):
     try:
         from backend.database import SessionLocal
         from backend.db_ops import (
@@ -1768,7 +1857,7 @@ def _persistir_banco_individuais(registros_csv):
 
         db = SessionLocal()
         try:
-            sessao = get_or_create_sessao(db, "InterTatus")
+            sessao = get_or_create_sessao(db, sessao_nome)
             count = 0
             for rec in registros_csv:
                 nome = rec.get("piloto")

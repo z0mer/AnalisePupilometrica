@@ -11,7 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import SAIDAS_DIR
+from backend.database import create_tables
 from backend.routers import cadastro, misc, motec, pilotos, processamento, sessoes
+
+create_tables()
 
 app = FastAPI(
     title="Análise Pupilométrica API",

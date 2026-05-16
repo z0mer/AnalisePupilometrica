@@ -22,6 +22,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -144,6 +145,10 @@ class ParametrosSync(Base):
     t_sync_motec_s: Mapped[float | None] = mapped_column(Float, nullable=True)
     # "microseconds" | "milliseconds" | "seconds" — auto-detectado pelo pipeline
     escala_timestamps: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Bytes dos CSVs originais (permite reprocessar sem re-upload)
+    dados_pupil: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    dados_motec: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    dados_fixacoes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     criado_em: Mapped[datetime] = mapped_column(
         default=_now, server_default=func.now()
     )

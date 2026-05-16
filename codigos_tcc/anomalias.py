@@ -154,7 +154,7 @@ def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
     return anomalias, derivada
 
 
-def carregar_piloto(nome, caminhos, df_meta):
+def carregar_piloto(nome, caminhos, df_meta, sessao_nome):
     df_pupil = pd.read_csv(str(caminhos["pupila"]), sep=None, engine="python", on_bad_lines="skip")
     df_pupil.columns = [str(c).strip() for c in df_pupil.columns]
 
@@ -185,22 +185,40 @@ def carregar_piloto(nome, caminhos, df_meta):
     df_pupil[c_p_d] = df_pupil[c_p_d].apply(limpa_diametro)
     df_pupil = df_pupil.dropna(subset=[c_p_t, c_p_d])
 
-    t_vals_raw = df_pupil[c_p_t].values.astype(float)
-    range_ts = t_vals_raw[-1] - t_vals_raw[0]
-    if range_ts > 100_000:
+    from backend.database import SessionLocal
+    from backend.db_ops import get_or_create_piloto as _get_piloto
+    from backend.db_ops import get_or_create_sessao as _get_sessao
+    from backend.models import ParametrosSync
+
+    with SessionLocal() as _db:
+        _sessao = _get_sessao(_db, sessao_nome)
+        _piloto = _get_piloto(_db, nome)
+        _params = _db.query(ParametrosSync).filter_by(
+            sessao_id=_sessao.id, piloto_id=_piloto.id
+        ).first()
+        if not _params or _params.frame_sync is None:
+            raise Exception(
+                f"frame_sync ausente para '{nome}' na sessao '{sessao_nome}'. "
+                "Execute sincronizacao.py antes."
+            )
+        frame_sync = _params.frame_sync
+
+    print(f"   [{nome}] frame_sync lido do banco: {frame_sync}")
+    t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
+
+    t_raw = df_pupil[c_p_t].values.astype(float) - t_sync_p
+    mediana_abs = np.nanmedian(np.abs(t_raw))
+    if mediana_abs > 100_000:
         escala = 1_000_000.0
         print(f"   [{nome}] Pupila em us -> s")
-    elif range_ts > 500:
+    elif mediana_abs > 500:
         escala = 1_000.0
         print(f"   [{nome}] Pupila em ms -> s")
     else:
         escala = 1.0
         print(f"   [{nome}] Pupila ja em s")
 
-    frame_sync = int(input(f"\n[{nome}] FRAME do Marco Zero no Pupil Player: ").strip())
-    t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
-
-    t_pupila = (df_pupil[c_p_t].values.astype(float) - t_sync_p) / escala
+    t_pupila = t_raw / escala
     diam_pupila = pd.Series(df_pupil[c_p_d].values).rolling(window=5, center=True).mean().values
 
     df_m = pd.read_csv(
@@ -228,6 +246,8 @@ def executar():
         raise Exception("Rode o Codigo 1 primeiro.")
     if not os.path.exists(ARQUIVO_VOLTAS):
         raise Exception("Arquivo de metadados nao encontrado. Rode o Codigo 1 primeiro.")
+
+    sessao_nome = input("Nome da sessao (deve coincidir com sincronizacao.py, ex: 'InterTatus'): ").strip() or "InterTatus"
 
     df_ideal = pd.read_csv(ARQUIVO_IDEAL)
     df_meta = pd.read_csv(ARQUIVO_VOLTAS)
@@ -259,7 +279,7 @@ def executar():
         print(f"   CARREGANDO: {nome.upper()}")
         print(f"{'=' * 60}")
 
-        df_m, t_pupila, diam_pupila, t_sync_m = carregar_piloto(nome, caminhos, df_meta)
+        df_m, t_pupila, diam_pupila, t_sync_m = carregar_piloto(nome, caminhos, df_meta, sessao_nome)
 
         lap_counts = sorted(df_m["lap_count"].dropna().unique())
         if len(lap_counts) > 1:
@@ -385,14 +405,11 @@ def executar():
 
             ax_pedal.plot(eixo_pct, acel_v, color="orange", linewidth=1.2, label="Acelerador")
             ax_pedal.plot(eixo_pct, freio_v, color="green", linewidth=1.2, label="Freio")
-            ax_pedal.plot(eixo_pct, acel_medio, color="orange", linewidth=1.5, linestyle="--", alpha=0.5, label="Acel ideal")
-            ax_pedal.plot(eixo_pct, freio_medio, color="green", linewidth=1.5, linestyle="--", alpha=0.5, label="Freio ideal")
             ax_pedal.set_ylabel("%", fontsize=9)
             ax_pedal.legend(loc="upper right", fontsize=7)
             ax_pedal.grid(True, alpha=0.3)
 
             ax_pupil.plot(eixo_pct, pup_v, color="purple", linewidth=1.2, label="Pupila")
-            ax_pupil.plot(eixo_pct, pupila_medio, color="purple", linewidth=1.5, linestyle="--", alpha=0.5, label="Pupila ideal")
             ax_pupil.set_ylabel("Diametro (mm)", fontsize=9)
             ax_pupil.set_xlabel("Progresso da Volta (%)", fontsize=10)
             ax_pupil.legend(loc="upper right", fontsize=7)
@@ -439,7 +456,7 @@ def executar():
     df_anom = pd.DataFrame(todas_anomalias_registro)
     df_anom.to_csv(ARQUIVO_ANOMALIAS, index=False)
 
-    _persistir_banco_anomalias(todas_anomalias_registro)
+    _persistir_banco_anomalias(todas_anomalias_registro, sessao_nome)
 
     print(f"\n{'=' * 60}")
     print(f"{imagens_geradas} imagem(ns) gerada(s) em: {GRAFICOS_VOLTAS_DIR}")
@@ -447,7 +464,7 @@ def executar():
     print(f"{'=' * 60}")
 
 
-def _persistir_banco_anomalias(todas_anomalias_registro):
+def _persistir_banco_anomalias(todas_anomalias_registro, sessao_nome="InterTatus"):
     try:
         from backend.database import SessionLocal
         from backend.db_ops import (
@@ -458,7 +475,7 @@ def _persistir_banco_anomalias(todas_anomalias_registro):
 
         db = SessionLocal()
         try:
-            sessao = get_or_create_sessao(db, "InterTatus")
+            sessao = get_or_create_sessao(db, sessao_nome)
             ti = db.query(TracadoIdealModel).filter_by(sessao_id=sessao.id).first()
             ti_id = ti.id if ti else None
 
