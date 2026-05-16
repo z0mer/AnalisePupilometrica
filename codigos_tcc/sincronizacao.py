@@ -22,6 +22,7 @@ from backend.db_ops import (
     upsert_parametros_sync,
     upsert_volta,
 )
+from backend.models import ParametrosSync, Volta
 from codigos_tcc.configuracao import PILOTOS
 from codigos_tcc.individual import clean_col, force_float, tradutor_de_tempos
 
@@ -473,6 +474,32 @@ def executar() -> None:
             sessao = get_or_create_sessao(db, nome_sessao)
             sessao_id = sessao.id
             piloto_id = piloto.id
+
+    # --- Verifica se já está sincronizado ---
+    with SessionLocal() as db:
+        ps = db.query(ParametrosSync).filter_by(
+            sessao_id=sessao_id, piloto_id=piloto_id
+        ).first()
+        volta_ouro = db.query(Volta).filter_by(
+            sessao_id=sessao_id, piloto_id=piloto_id, eh_volta_ouro=True
+        ).first()
+
+    ja_sincronizado = (
+        ps is not None
+        and ps.frame_sync is not None
+        and ps.t_sync_motec_s is not None
+        and volta_ouro is not None
+    )
+
+    if ja_sincronizado:
+        print(f"\n   ✓ {nome_piloto} já está sincronizado na sessão '{nome_sessao}'.")
+        print(f"     frame_sync     : {ps.frame_sync}")
+        print(f"     t_sync_motec_s : {ps.t_sync_motec_s:.4f} s")
+        print(f"     Volta de ouro  : volta {volta_ouro.numero_volta}")
+        resp = input("\n   Deseja refazer a sincronização? [s/N]: ").strip().lower()
+        if resp != "s":
+            print("\nSincronização pulada. Dados existentes mantidos.")
+            return
 
     # ==========================================================
     # Etapa 1 — Ponto de sync do Pupil Labs

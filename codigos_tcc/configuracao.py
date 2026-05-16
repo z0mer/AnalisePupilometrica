@@ -61,14 +61,39 @@ PILOTOS = {
         "motec": DADOS_DIR / "Anna_InterTatus" / "Anna.csv",
         "blinks": DADOS_DIR / "Anna_InterTatus" / "blinks.csv",
     },
-    # "Niko": {
-    #     "pupila": DADOS_DIR / "Niko_InterGTR" / "pupil_positions.csv",
-    #     "fixations":  DADOS_DIR / "Niko_InterGTR" / "fixations.csv",
-    #     "motec": DADOS_DIR / "Niko_InterGTR" / "Niko.csv",
-    #     "blinks": DADOS_DIR / "Niko_InterGTR" / "blinks.csv",
-    # },
+    "Niko": {
+        "pupila": DADOS_DIR / "Niko_InterGTR" / "pupil_positions.csv",
+        "fixations":  DADOS_DIR / "Niko_InterGTR" / "fixations.csv",
+        "motec": DADOS_DIR / "Niko_InterGTR" / "Niko.csv",
+        "blinks": DADOS_DIR / "Niko_InterGTR" / "blinks.csv",
+    },
+    "Humberto": {
+        "pupila": DADOS_DIR / "Humberto_InterPorsche" / "pupil_positions.csv",
+        "fixations":  DADOS_DIR / "Humberto_InterPorsche" / "fixations.csv",
+        "motec": DADOS_DIR / "Humberto_InterPorsche" / "Humberto2.csv",
+        "blinks": DADOS_DIR / "Humberto_InterPorsche" / "blinks.csv",
+    },
+    "Bruno - Instrutor": {
+        "pupila": DADOS_DIR / "BrunoInstr_InterPorsche" / "pupil_positions.csv",
+        "fixations":  DADOS_DIR / "BrunoInstr_InterPorsche" / "fixations.csv",
+        "motec": DADOS_DIR / "BrunoInstr_InterPorsche" / "BrunoInstr.csv",
+        "blinks": DADOS_DIR / "BrunoInstr_InterPorsche" / "blinks.csv",
+    },
+    "Chris": {
+        "pupila": DADOS_DIR / "Chris_InterPorsche" / "pupil_positions.csv",
+        "fixations":  DADOS_DIR / "Chris_InterPorsche" / "fixations.csv",
+        "motec": DADOS_DIR / "Chris_InterPorsche" / "Chris.csv",
+        "blinks": DADOS_DIR / "Chris_InterPorsche" / "blinks.csv",
+    },
 }
 
+
+NIVEL_PILOTOS = {
+    "Grota":          "Pro",
+    "Rafa - Mustang": "Pro",
+    "Carloni":        "Pro",
+    "Niko":           "Pro",
+}
 
 ARQUIVO_IDEAL = VOLTA_IDEAL_DIR / "tracado_ideal.csv"
 ARQUIVO_VOLTAS = VOLTA_IDEAL_DIR / "voltas_individuais.csv"

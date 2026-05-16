@@ -39,6 +39,7 @@ from codigos_tcc.configuracao import (
     ARQUIVO_RELATORIO_TR,
     GRAFICOS_TR_DIR,
     GRAFICOS_VOLTAS_DIR,
+    NIVEL_PILOTOS,
     PILOTOS,
     validar_arquivos_base,
 )
@@ -155,6 +156,7 @@ _COLUNAS_ANOVA = {
     # Identificação e contexto
     "t_anom_ini":                "Timestamp",
     "piloto":                    "ID_Piloto",
+    "nivel_piloto":              "Nivel_Piloto",
     "volta_num":                 "Volta",
     "tipo":                      "Tipo_Anomalia",
     "contexto_pista":            "Contexto_Pista",
@@ -193,6 +195,9 @@ def salvar_csv_individual(nome: str, todos_registros: list, pasta) -> str:
     registros_piloto = [r for r in todos_registros if r.get("piloto") == nome]
     if not registros_piloto:
         return ""
+    nivel = NIVEL_PILOTOS.get(nome, "Amador")
+    for r in registros_piloto:
+        r["nivel_piloto"] = nivel
     df_fonte = pd.DataFrame(registros_piloto)
     colunas_presentes = {k: v for k, v in _COLUNAS_ANOVA.items() if k in df_fonte.columns}
     df = df_fonte[list(colunas_presentes.keys())].rename(columns=colunas_presentes)

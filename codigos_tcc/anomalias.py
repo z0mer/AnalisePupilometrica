@@ -24,6 +24,16 @@ JANELA_SUAVIZACAO_DERIV = 5
 DURACAO_MINIMA_PCT = 0.8
 TOLERANCIA_GAP_PCT = 0.8
 
+# Detecção aprimorada
+LIMIAR_DTW_SCORE = 5.0
+LIMIAR_DESVIO_RETA_PICO_GRAUS = 25.0
+LIMIAR_DERIVADA_MEDIA = 3.5
+LIMIAR_CHICOTE_IDEAL_GRAUS = 15.0
+LIMIAR_CHICOTE_PILOTO_GRAUS = 45.0
+LIMIAR_OVERSHOOT_GRAUS = 45.0
+DTW_TAMANHO_JANELA = 80
+DTW_PASSO = 20
+
 
 def force_float(val):
     if pd.isna(val):
@@ -112,7 +122,78 @@ def mesclar_e_filtrar(regioes, eixo, tol, dur_min):
     return [(i, f) for i, f in mescladas if eixo[f] - eixo[i] >= dur_min]
 
 
+def dtw_score_janelas(pilot_steer, ideal_steer, tamanho_janela=DTW_TAMANHO_JANELA, passo=DTW_PASSO):
+    try:
+        from fastdtw import fastdtw
+        from scipy.spatial.distance import euclidean
+        usar_dtw = True
+    except ImportError:
+        usar_dtw = False
+
+    n = len(pilot_steer)
+    scores = np.zeros(n)
+    contagens = np.zeros(n)
+    for start in range(0, n - tamanho_janela, passo):
+        end = start + tamanho_janela
+        p = pilot_steer[start:end]
+        i = ideal_steer[start:end]
+        if usar_dtw:
+            dist, _ = fastdtw(p.reshape(-1, 1), i.reshape(-1, 1), dist=euclidean)
+        else:
+            dist = float(np.sum(np.abs(p - i)))
+        scores[start:end] += dist / tamanho_janela
+        contagens[start:end] += 1
+    contagens[contagens == 0] = 1
+    return scores / contagens
+
+
+def centralizar_no_pico(regioes, delta, limiar_relativo=0.2):
+    resultado = []
+    n = len(delta)
+    for ini, fim in regioes:
+        segmento = np.abs(delta[ini : fim + 1])
+        if len(segmento) == 0:
+            continue
+        peak_local = int(np.argmax(segmento))
+        peak_idx = ini + peak_local
+        limiar = segmento[peak_local] * limiar_relativo
+        start = peak_idx
+        while start > 0 and np.abs(delta[start - 1]) >= limiar:
+            start -= 1
+        end = peak_idx
+        while end < n - 1 and np.abs(delta[end + 1]) >= limiar:
+            end += 1
+        resultado.append((start, end))
+    return resultado
+
+
+def filtrar_por_pico(regioes, sinal, limiar_pico):
+    return [
+        (i, f) for i, f in regioes
+        if len(sinal[i : f + 1]) > 0 and np.max(np.abs(sinal[i : f + 1])) >= limiar_pico
+    ]
+
+
+def coalescer_recuperacoes(regioes_a, regioes_bc, eixo_pct, janela_pct=5.0):
+    regioes_a = [list(r) for r in regioes_a]
+    absorvidas = set()
+    for a in regioes_a:
+        fim_a_pct = eixo_pct[a[1]]
+        for j, bc in enumerate(regioes_bc):
+            if j in absorvidas:
+                continue
+            ini_bc_pct = eixo_pct[bc[0]]
+            if 0.0 <= ini_bc_pct - fim_a_pct <= janela_pct:
+                a[1] = max(a[1], bc[1])
+                absorvidas.add(j)
+    regioes_bc_restantes = [r for j, r in enumerate(regioes_bc) if j not in absorvidas]
+    return [tuple(r) for r in regioes_a], regioes_bc_restantes
+
+
 def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
+    delta = piloto_steer - steering_medio
+    dtw_scores = dtw_score_janelas(piloto_steer, steering_medio)
+
     eh_reta = np.abs(steering_medio) < LIMIAR_RETA_GRAUS
     eh_curva = ~eh_reta
 
@@ -120,8 +201,15 @@ def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
     magnitude_ok = (np.abs(piloto_steer) > LIMIAR_SINAL_INVERTIDO_GRAUS) & (
         np.abs(steering_medio) > LIMIAR_SINAL_INVERTIDO_GRAUS
     )
-    mascara_a = sinal_oposto & magnitude_ok & eh_curva
-    mascara_b = eh_reta & (np.abs(piloto_steer) > LIMIAR_DESVIO_RETA_GRAUS)
+    mascara_chicote = (
+        (np.abs(steering_medio) <= LIMIAR_CHICOTE_IDEAL_GRAUS) &
+        (np.abs(piloto_steer) >= LIMIAR_CHICOTE_PILOTO_GRAUS)
+    )
+    mascara_overshoot = np.abs(delta) > LIMIAR_OVERSHOOT_GRAUS
+    mascara_a = (
+        (sinal_oposto & magnitude_ok & eh_curva) | mascara_chicote | mascara_overshoot
+    ) & (dtw_scores > LIMIAR_DTW_SCORE)
+    mascara_b = eh_reta & (np.abs(piloto_steer) > LIMIAR_DESVIO_RETA_GRAUS) & (dtw_scores > LIMIAR_DTW_SCORE)
 
     steer_suav = pd.Series(piloto_steer).rolling(
         window=JANELA_SUAVIZACAO_DERIV, center=True, min_periods=1
@@ -135,9 +223,22 @@ def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
     regioes_b = mesclar_e_filtrar(
         agrupar_regioes(mascara_b, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
+    regioes_b = filtrar_por_pico(regioes_b, piloto_steer, LIMIAR_DESVIO_RETA_PICO_GRAUS)
+
     regioes_c = mesclar_e_filtrar(
         agrupar_regioes(mascara_c, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
+    regioes_c = [
+        (i, f) for i, f in regioes_c
+        if len(derivada[i : f + 1]) > 0 and np.mean(derivada[i : f + 1]) >= LIMIAR_DERIVADA_MEDIA
+    ]
+
+    regioes_a = centralizar_no_pico(regioes_a, delta)
+    regioes_b = centralizar_no_pico(regioes_b, delta)
+    regioes_c = centralizar_no_pico(regioes_c, derivada)
+
+    regioes_a, regioes_b = coalescer_recuperacoes(regioes_a, regioes_b, eixo_pct)
+    regioes_a, regioes_c = coalescer_recuperacoes(regioes_a, regioes_c, eixo_pct)
 
     anomalias = []
     for tipo, regioes in [("A", regioes_a), ("B", regioes_b), ("C", regioes_c)]:

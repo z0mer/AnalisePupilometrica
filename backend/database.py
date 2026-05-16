@@ -4,9 +4,9 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DATABASE_URL = (
-    "postgresql+psycopg2://neondb_owner:npg_lyL4o5dAijeh"
-    "@ep-shiny-cell-acjahhe8.sa-east-1.aws.neon.tech"
-    "/neondb?sslmode=require"
+    "postgresql+psycopg2://postgres:An1612082414**"
+    "@db.ntshpaolfwrwkurxfzho.supabase.co:5432"
+    "/postgres?sslmode=require"
 )
 
 engine = create_engine(

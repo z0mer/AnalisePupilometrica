@@ -131,6 +131,16 @@ JANELA_SUAVIZACAO_DERIV = 5
 DURACAO_MINIMA_PCT = 0.8
 TOLERANCIA_GAP_PCT = 0.8
 
+# Detecção aprimorada
+LIMIAR_DTW_SCORE = 5.0           # score DTW normalizado (graus/ponto) para anomalia A/B
+LIMIAR_DESVIO_RETA_PICO_GRAUS = 25.0  # pico mínimo para confirmar anomalia B
+LIMIAR_DERIVADA_MEDIA = 3.5      # derivada média mínima para confirmar anomalia C
+LIMIAR_CHICOTE_IDEAL_GRAUS = 15.0     # ideal "reto" para detectar chicote/salvamento
+LIMIAR_CHICOTE_PILOTO_GRAUS = 45.0    # amplitude mínima do chicote
+LIMIAR_OVERSHOOT_GRAUS = 45.0    # delta |piloto - ideal| que força Tipo A independente de polaridade
+DTW_TAMANHO_JANELA = 80          # pontos por janela DTW (~8% da volta)
+DTW_PASSO = 20                   # passo entre janelas DTW
+
 # Constantes TR (anomalias_individuais)
 JANELA_REACAO_SEG = 3.0
 JANELA_POS_ANOMALIA_SEG = 2.0
@@ -141,6 +151,13 @@ LIMIAR_FIXACAO_CURTA_MS = 100.0
 LIMIAR_FIXACAO_LONGA_MS = 800.0
 LIMIAR_PICO_DILATACAO_MM = 0.8
 N_SETORES = 10
+
+NIVEL_PILOTOS: dict[str, str] = {
+    "Grota":          "Pro",
+    "Rafa - Mustang": "Pro",
+    "Carloni":        "Pro",
+    "Niko":           "Pro",
+}
 
 LABELS_TIPO = {
     "A": "Sinal Invertido (curva lado errado)",

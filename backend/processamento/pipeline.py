@@ -26,13 +26,21 @@ import pandas as pd
 
 from backend.processamento.utils import (
     CORES_TIPO,
+    DTW_PASSO,
+    DTW_TAMANHO_JANELA,
     DURACAO_MINIMA_PCT,
     JANELA_POS_ANOMALIA_SEG,
     JANELA_REACAO_SEG,
     JANELA_SUAVIZACAO_DERIV,
     LABELS_TIPO,
+    LIMIAR_CHICOTE_IDEAL_GRAUS,
+    LIMIAR_CHICOTE_PILOTO_GRAUS,
     LIMIAR_DESVIO_RETA_GRAUS,
+    LIMIAR_OVERSHOOT_GRAUS,
+    LIMIAR_DESVIO_RETA_PICO_GRAUS,
     LIMIAR_DERIVADA,
+    LIMIAR_DERIVADA_MEDIA,
+    LIMIAR_DTW_SCORE,
     LIMIAR_FIXACAO_CURTA_MS,
     LIMIAR_FIXACAO_LONGA_MS,
     LIMIAR_ONSET_PEDAL_PCT,
@@ -42,6 +50,7 @@ from backend.processamento.utils import (
     LIMIAR_RETA_GRAUS,
     LIMIAR_SINAL_INVERTIDO_GRAUS,
     N_SETORES,
+    NIVEL_PILOTOS,
     TOLERANCIA_GAP_PCT,
     atirar_com_sniper,
     clean_col,
@@ -523,6 +532,114 @@ def _mesclar_e_filtrar(
     return [(i, f) for i, f in mescladas if eixo[f] - eixo[i] >= dur_min]
 
 
+def _dtw_score_janelas(
+    pilot_steer: np.ndarray,
+    ideal_steer: np.ndarray,
+    tamanho_janela: int = DTW_TAMANHO_JANELA,
+    passo: int = DTW_PASSO,
+) -> np.ndarray:
+    """
+    Calcula um score DTW por janela deslizante.
+    Score baixo = forma similar ao ideal (pode ser só atraso de execução).
+    Score alto = formato genuinamente diferente = anomalia real.
+    """
+    try:
+        from fastdtw import fastdtw
+        from scipy.spatial.distance import euclidean
+        usar_dtw = True
+    except ImportError:
+        usar_dtw = False
+
+    n = len(pilot_steer)
+    scores = np.zeros(n)
+    contagens = np.zeros(n)
+
+    for start in range(0, n - tamanho_janela, passo):
+        end = start + tamanho_janela
+        p = pilot_steer[start:end]
+        i = ideal_steer[start:end]
+        if usar_dtw:
+            dist, _ = fastdtw(p.reshape(-1, 1), i.reshape(-1, 1), dist=euclidean)
+        else:
+            dist = float(np.sum(np.abs(p - i)))  # fallback ponto-a-ponto
+        dist_norm = dist / tamanho_janela
+        scores[start:end] += dist_norm
+        contagens[start:end] += 1
+
+    contagens[contagens == 0] = 1
+    return scores / contagens
+
+
+def _centralizar_no_pico(
+    regioes: list[tuple[int, int]],
+    delta: np.ndarray,
+    limiar_relativo: float = 0.2,
+) -> list[tuple[int, int]]:
+    """
+    Re-ancora cada região detectada no pico do delta, expandindo enquanto
+    o sinal superar 20% do pico. Corrige o offset entre onde o erro acontece
+    e onde a máscara booleana dispara.
+    """
+    resultado = []
+    n = len(delta)
+    for ini, fim in regioes:
+        segmento = np.abs(delta[ini : fim + 1])
+        if len(segmento) == 0:
+            continue
+        peak_local = int(np.argmax(segmento))
+        peak_idx = ini + peak_local
+        limiar = segmento[peak_local] * limiar_relativo
+
+        start = peak_idx
+        while start > 0 and np.abs(delta[start - 1]) >= limiar:
+            start -= 1
+        end = peak_idx
+        while end < n - 1 and np.abs(delta[end + 1]) >= limiar:
+            end += 1
+        resultado.append((start, end))
+    return resultado
+
+
+def _filtrar_por_pico(
+    regioes: list[tuple[int, int]],
+    sinal: np.ndarray,
+    limiar_pico: float,
+) -> list[tuple[int, int]]:
+    """Mantém só regiões cujo pico absoluto supera limiar_pico."""
+    return [
+        (i, f) for i, f in regioes
+        if len(sinal[i : f + 1]) > 0 and np.max(np.abs(sinal[i : f + 1])) >= limiar_pico
+    ]
+
+
+def _coalescer_recuperacoes(
+    regioes_a: list[tuple[int, int]],
+    regioes_bc: list[tuple[int, int]],
+    eixo_pct: np.ndarray,
+    janela_pct: float = 5.0,
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """
+    Absorve cada região B/C que começa dentro de janela_pct% após o fim de
+    uma região A. Evita que a recuperação frenética do erro seja classificada
+    como anomalia separada.
+    """
+    regioes_a = [list(r) for r in regioes_a]
+    absorvidas: set[int] = set()
+
+    for a in regioes_a:
+        fim_a_pct = eixo_pct[a[1]]
+        for j, bc in enumerate(regioes_bc):
+            if j in absorvidas:
+                continue
+            ini_bc_pct = eixo_pct[bc[0]]
+            if 0.0 <= ini_bc_pct - fim_a_pct <= janela_pct:
+                a[1] = max(a[1], bc[1])
+                absorvidas.add(j)
+
+    regioes_bc_restantes = [r for j, r in enumerate(regioes_bc) if j not in absorvidas]
+    return [tuple(r) for r in regioes_a], regioes_bc_restantes
+
+
 def detectar_anomalias_pura(
     piloto_steer: np.ndarray,
     steering_medio: np.ndarray,
@@ -531,20 +648,39 @@ def detectar_anomalias_pura(
 ) -> tuple[list[dict], np.ndarray]:
     """
     Detecta anomalias de volante comparando com o traçado ideal.
-    Tipos: A (sinal invertido em curva), B (desvio em reta), C (correção brusca).
+    Tipos: A (sinal invertido em curva OU chicote/salvamento na reta),
+           B (desvio excessivo em reta com magnitude confirmada),
+           C (correção brusca com derivada sustentada).
     Retorna (lista_anomalias, derivada).
     """
+    delta = piloto_steer - steering_medio
+    dtw_scores = _dtw_score_janelas(piloto_steer, steering_medio)
+
     eh_reta = np.abs(steering_medio) < LIMIAR_RETA_GRAUS
     eh_curva = ~eh_reta
 
+    # --- Tipo A: sinal invertido em curva OU chicote/salvamento na reta ---
     sinal_oposto = np.sign(piloto_steer) != np.sign(steering_medio)
     magnitude_ok = (
         (np.abs(piloto_steer) > LIMIAR_SINAL_INVERTIDO_GRAUS) &
         (np.abs(steering_medio) > LIMIAR_SINAL_INVERTIDO_GRAUS)
     )
-    mascara_a = sinal_oposto & magnitude_ok & eh_curva
-    mascara_b = eh_reta & (np.abs(piloto_steer) > LIMIAR_DESVIO_RETA_GRAUS)
+    mascara_chicote = (
+        (np.abs(steering_medio) <= LIMIAR_CHICOTE_IDEAL_GRAUS) &
+        (np.abs(piloto_steer) >= LIMIAR_CHICOTE_PILOTO_GRAUS)
+    )
+    mascara_overshoot = np.abs(delta) > LIMIAR_OVERSHOOT_GRAUS
+    mascara_a = (
+        (sinal_oposto & magnitude_ok & eh_curva)
+        | mascara_chicote
+        | mascara_overshoot
+    ) & (dtw_scores > LIMIAR_DTW_SCORE)
 
+    # --- Tipo B: desvio excessivo em reta ---
+    mascara_b = eh_reta & (np.abs(piloto_steer) > LIMIAR_DESVIO_RETA_GRAUS)
+    mascara_b = mascara_b & (dtw_scores > LIMIAR_DTW_SCORE)
+
+    # --- Tipo C: correção brusca (derivada) ---
     steer_suav = (
         pd.Series(piloto_steer)
         .rolling(window=JANELA_SUAVIZACAO_DERIV, center=True, min_periods=1)
@@ -554,15 +690,33 @@ def detectar_anomalias_pura(
     derivada = np.abs(np.gradient(steer_suav, eixo_pct))
     mascara_c = derivada > LIMIAR_DERIVADA
 
+    # Agrupamento e filtragem
     regioes_a = _mesclar_e_filtrar(
         _agrupar_regioes(mascara_a, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
     regioes_b = _mesclar_e_filtrar(
         _agrupar_regioes(mascara_b, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
+    # Tipo B: confirmar pico mínimo para eliminar micro-correções de reta
+    regioes_b = _filtrar_por_pico(regioes_b, piloto_steer, LIMIAR_DESVIO_RETA_PICO_GRAUS)
+
     regioes_c = _mesclar_e_filtrar(
         _agrupar_regioes(mascara_c, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
+    # Tipo C: confirmar que a derivada média é sustentada (não apenas spike de ruído)
+    regioes_c = [
+        (i, f) for i, f in regioes_c
+        if len(derivada[i : f + 1]) > 0 and np.mean(derivada[i : f + 1]) >= LIMIAR_DERIVADA_MEDIA
+    ]
+
+    # Centralizar cada região no pico real do delta
+    regioes_a = _centralizar_no_pico(regioes_a, delta)
+    regioes_b = _centralizar_no_pico(regioes_b, delta)
+    regioes_c = _centralizar_no_pico(regioes_c, derivada)
+
+    # Coalescência: absorver B/C de recuperação dentro do Tipo A precedente
+    regioes_a, regioes_b = _coalescer_recuperacoes(regioes_a, regioes_b, eixo_pct)
+    regioes_a, regioes_c = _coalescer_recuperacoes(regioes_a, regioes_c, eixo_pct)
 
     anomalias = []
     for tipo, regioes in [("A", regioes_a), ("B", regioes_b), ("C", regioes_c)]:
@@ -1123,6 +1277,7 @@ def processar_tr_piloto(
 
         registros_csv.append({
             "piloto": nome,
+            "nivel_piloto": NIVEL_PILOTOS.get(nome, "Amador"),
             "volta_num": volta_num,
             "anom_num": anom_num,
             "tipo": tipo,
