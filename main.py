@@ -1,23 +1,25 @@
-from codigos_tcc import anomalias, anomalias_individuais, individual, media_pilotos
+from codigos_tcc import anomalias, anomalias_individuais, individual, media_pilotos, sincronizacao
 
 
 def exibir_menu():
     print("\n" + "=" * 60)
     print("MENU PRINCIPAL")
     print("=" * 60)
-    print("1. Rodar individual.py")
-    print("2. Rodar media_pilotos.py")
-    print("3. Rodar anomalias.py")
-    print("4. Rodar anomalias_individuais.py")
+    print("1. Rodar sincronizacao.py  ← execute antes dos demais")
+    print("2. Rodar individual.py")
+    print("3. Rodar media_pilotos.py")
+    print("4. Rodar anomalias.py")
+    print("5. Rodar anomalias_individuais.py")
     print("0. Sair")
 
 
 def main():
     opcoes = {
-        "1": ("individual.py", individual.executar),
-        "2": ("media_pilotos.py", media_pilotos.executar),
-        "3": ("anomalias.py", anomalias.executar),
-        "4": ("anomalias_individuais.py", anomalias_individuais.executar),
+        "1": ("sincronizacao.py",         sincronizacao.executar),
+        "2": ("individual.py",            individual.executar),
+        "3": ("media_pilotos.py",         media_pilotos.executar),
+        "4": ("anomalias.py",             anomalias.executar),
+        "5": ("anomalias_individuais.py", anomalias_individuais.executar),
     }
 
     while True:

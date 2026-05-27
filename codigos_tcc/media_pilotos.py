@@ -60,7 +60,7 @@ def clean_col(df, name_list):
     print(f"   ❌ Não encontrado: {name_list}")
     return None, None
 
-def processar_piloto(nome, caminhos):
+def processar_piloto(nome, caminhos, sessao_nome="InterTatus"):
     print(f"\n{'='*60}")
     print(f"   👤 PILOTO: {nome.upper()}")
     print(f"{'='*60}")
@@ -94,10 +94,45 @@ def processar_piloto(nome, caminhos):
     c_p_d = c_p_d_list[0]
     print(f"   Usando diâmetro: '{c_p_d}'")
 
-    print(f"\n🏁 MARCO ZERO — {nome}")
-    frame_sync = int(input(f"   🎬 [{nome}] FRAME do Marco Zero: "))
-    t_sync_m   = tradutor_de_tempos(input(f"   🏎️  [{nome}] Tempo MoTeC do Marco Zero: "))
-    t_sync_p   = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
+    print(f"\n🏁 MARCO ZERO — {nome} (lendo do banco)")
+    from backend.database import SessionLocal
+    from backend.db_ops import get_or_create_piloto, get_or_create_sessao
+    from backend.models import ParametrosSync, Volta
+
+    with SessionLocal() as _db:
+        _sessao = get_or_create_sessao(_db, sessao_nome)
+        _piloto = get_or_create_piloto(_db, nome)
+        _params = _db.query(ParametrosSync).filter_by(
+            sessao_id=_sessao.id, piloto_id=_piloto.id
+        ).first()
+        if not _params or _params.frame_sync is None or _params.t_sync_motec_s is None:
+            raise Exception(
+                f"Parâmetros de sync ausentes para '{nome}' na sessão '{sessao_nome}'. "
+                "Execute sincronizacao.py antes deste script."
+            )
+        frame_sync = _params.frame_sync
+        t_sync_m   = _params.t_sync_motec_s
+
+        _volta_ouro = _db.query(Volta).filter(
+            Volta.sessao_id == _sessao.id,
+            Volta.piloto_id == _piloto.id,
+            Volta.eh_volta_ouro == True,
+            Volta.frame_ini_pupil.isnot(None),
+            Volta.frame_fim_pupil.isnot(None),
+        ).first()
+        if not _volta_ouro:
+            raise Exception(
+                f"Volta ouro com frames de pupila ausente para '{nome}' na sessão '{sessao_nome}'. "
+                "Execute sincronizacao.py antes deste script."
+            )
+        frame_ini    = _volta_ouro.frame_ini_pupil
+        frame_fim    = _volta_ouro.frame_fim_pupil
+        numero_volta = _volta_ouro.numero_volta
+
+    print(f"   frame_sync   = {frame_sync}  |  t_sync_motec = {t_sync_m:.4f} s")
+    print(f"   frame_ini    = {frame_ini}  |  frame_fim    = {frame_fim}  |  volta {numero_volta}")
+
+    t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
     print(f"   Timestamp bruto Marco Zero: {t_sync_p}")
 
     df_pupil[c_p_t] = df_pupil[c_p_t].apply(force_float)
@@ -137,18 +172,10 @@ def processar_piloto(nome, caminhos):
         else:
             print(f"   ⚠️ '{col}' não disponível.")
 
-    print(f"\n🏆 VOLTA DE OURO — {nome}")
-    frame_ini = int(input(f"   🎬 [{nome}] FRAME INICIAL da Volta: "))
-    frame_fim = int(input(f"   🎬 [{nome}] FRAME FINAL da Volta: "))
-
+    print(f"\n🏆 VOLTA DE OURO — {nome} (frames do banco)")
     t_ini_sync = (atirar_com_sniper(frame_ini, df_pupil, c_p_wi, c_p_t) - t_sync_p) / escala
     t_fim_sync = (atirar_com_sniper(frame_fim, df_pupil, c_p_wi, c_p_t) - t_sync_p) / escala
     print(f"   Janela: {t_ini_sync:.2f}s → {t_fim_sync:.2f}s")
-
-    t_ini_m_raw = input(f"   🏎️  [{nome}] Tempo INICIAL MoTeC (registro): ")
-    t_fim_m_raw = input(f"   🏎️  [{nome}] Tempo FINAL MoTeC (registro): ")
-    _ = tradutor_de_tempos(t_ini_m_raw) if t_ini_m_raw.strip() else 0
-    _ = tradutor_de_tempos(t_fim_m_raw) if t_fim_m_raw.strip() else 0
 
     df_ouro = df_master[
         (df_master['tempo_sync'] >= t_ini_sync) &
@@ -160,22 +187,23 @@ def processar_piloto(nome, caminhos):
         raise Exception(f"Volta de ouro vazia para {nome}!")
 
     meta = {
-        'piloto': nome,
-        'volta_num': 1,
-        't_ini': t_ini_sync,
-        't_fim': t_fim_sync,
-        't_sync_m': t_sync_m
+        'piloto':    nome,
+        'volta_num': numero_volta,
+        't_ini':     t_ini_sync,
+        't_fim':     t_fim_sync,
+        't_sync_m':  t_sync_m,
     }
 
     return df_ouro, meta
 
 def executar():
     validar_arquivos_base()
+    sessao_nome = input("Nome da sessão (deve coincidir com o usado em sincronizacao.py, ex: 'InterTatus'): ").strip() or "InterTatus"
     resultados = {}
     todas_metas = []
 
     for nome, caminhos in PILOTOS.items():
-        df_ouro, meta = processar_piloto(nome, caminhos)
+        df_ouro, meta = processar_piloto(nome, caminhos, sessao_nome)
         resultados[nome] = df_ouro
         todas_metas.append(meta)
 
@@ -207,29 +235,41 @@ def executar():
         sigmas[canal] = np.nanstd(stack,  axis=0)
 
     # ---------------------------------------------------------------
-    # 📊 GRÁFICO: Limpo para TCC
+    # 📊 GRÁFICO: Esterçamento + Contexto Reta/Curva
     # ---------------------------------------------------------------
-    fig2, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(16, 10), sharex=True)
-    fig2.suptitle('Traçado Ideal — Média das Voltas de Ouro (Limpo)', fontsize=14, fontweight='bold')
+    LIMIAR_RETA_GRAUS = 10.0
+    eh_reta  = np.abs(medias['volante']) < LIMIAR_RETA_GRAUS
+    eh_curva = ~eh_reta
 
-    ax1.plot(eixo_norm, medias['diam_suav'], color='purple', linewidth=2)
-    ax1.fill_between(eixo_norm, medias['diam_suav'] - sigmas['diam_suav'], medias['diam_suav'] + sigmas['diam_suav'], alpha=0.15, color='purple')
-    ax1.set_title('Dilatação da Pupila'); ax1.set_ylabel('Diâmetro (mm)'); ax1.grid(True, alpha=0.3)
+    fig2, (ax_ctx, ax_steer) = plt.subplots(
+        2, 1, figsize=(16, 7),
+        sharex=True,
+        gridspec_kw={'height_ratios': [0.5, 3]},
+    )
+    fig2.suptitle('Traçado Ideal — Média das Voltas de Ouro', fontsize=14, fontweight='bold')
 
-    ax2.plot(eixo_norm, medias['acel'],  color='orange', linewidth=2, label='Acelerador')
-    ax2.plot(eixo_norm, medias['freio'], color='green',  linewidth=2, label='Freio')
-    ax2.fill_between(eixo_norm, medias['acel'] - sigmas['acel'], medias['acel'] + sigmas['acel'],  alpha=0.12, color='orange')
-    ax2.fill_between(eixo_norm, medias['freio'] - sigmas['freio'], medias['freio'] + sigmas['freio'], alpha=0.12, color='green')
-    ax2.set_title('Pedais'); ax2.set_ylabel('%'); ax2.legend(loc='upper right'); ax2.grid(True, alpha=0.3)
+    # Faixa de contexto Reta / Curva
+    ax_ctx.fill_between(eixo_norm, 0, 1, where=eh_reta,  color='#2ecc71', alpha=0.5, label='Reta')
+    ax_ctx.fill_between(eixo_norm, 0, 1, where=eh_curva, color='#3498db', alpha=0.5, label='Curva')
+    ax_ctx.set_yticks([])
+    ax_ctx.set_title('Contexto da Pista', fontsize=9)
+    ax_ctx.legend(loc='upper right', fontsize=8)
+    ax_ctx.grid(False)
 
-    ax3.plot(eixo_norm, medias['volante'], color='black', linewidth=2)
-    ax3.fill_between(eixo_norm,
-                     medias['volante'] - sigmas['volante'],
-                     medias['volante'] + sigmas['volante'],
-                     alpha=0.15, color='black', label='±1σ')
-    ax3.set_title('Esterçamento do Volante'); ax3.set_ylabel('Graus')
-    ax3.legend(loc='upper right'); ax3.grid(True, alpha=0.3)
-    ax3.set_xlabel('Progresso da Volta (%)')
+    # Esterçamento médio ± 1σ
+    ax_steer.plot(eixo_norm, medias['volante'], color='black', linewidth=2, label='Média')
+    ax_steer.fill_between(
+        eixo_norm,
+        medias['volante'] - sigmas['volante'],
+        medias['volante'] + sigmas['volante'],
+        alpha=0.15, color='black', label='±1σ',
+    )
+    ax_steer.set_title('Esterçamento do Volante')
+    ax_steer.set_ylabel('Graus')
+    ax_steer.set_xlabel('Progresso da Volta (%)')
+    ax_steer.legend(loc='upper right')
+    ax_steer.grid(True, alpha=0.3)
+
     plt.tight_layout()
     plt.savefig(ARQUIVO_GRAFICO_IDEAL, dpi=150, bbox_inches='tight')
     plt.show()
@@ -254,6 +294,55 @@ def executar():
     
     pd.DataFrame(todas_metas).to_csv(ARQUIVO_VOLTAS, index=False)
     print(f"💾 Metadados das voltas salvos em: {ARQUIVO_VOLTAS}")
+
+    _persistir_banco_media(df_ideal, todas_metas, resultados, sessao_nome)
+
+def _persistir_banco_media(df_ideal, todas_metas, resultados, sessao_nome="InterTatus"):
+    try:
+        from backend.database import SessionLocal
+        from backend.db_ops import (
+            get_or_create_piloto, get_or_create_sessao,
+            upsert_parametros_sync, upsert_volta,
+            upsert_tracado_ideal, upsert_serie_temporal,
+        )
+        db = SessionLocal()
+        try:
+            sessao = get_or_create_sessao(db, sessao_nome)
+            pilotos_ids = []
+            for meta in todas_metas:
+                nome = meta['piloto']
+                piloto = get_or_create_piloto(db, nome)
+                pilotos_ids.append(piloto.id)
+                upsert_parametros_sync(db, sessao.id, piloto.id, t_sync_motec_s=meta['t_sync_m'])
+                volta = upsert_volta(
+                    db, sessao.id, piloto.id,
+                    numero_volta=int(meta['volta_num']),
+                    t_ini=meta['t_ini'],
+                    t_fim=meta['t_fim'],
+                    duracao=meta['t_fim'] - meta['t_ini'],
+                    eh_ouro=True,
+                )
+                df_o = resultados[nome]
+                upsert_serie_temporal(db, volta.id, "motec", {
+                    "t":       df_o["tempo_sync"].tolist(),
+                    "acel":    df_o["acel"].tolist() if "acel" in df_o.columns else [],
+                    "freio":   df_o["freio"].tolist() if "freio" in df_o.columns else [],
+                    "volante": df_o["volante"].tolist() if "volante" in df_o.columns else [],
+                })
+                upsert_serie_temporal(db, volta.id, "pupila", {
+                    "t":    df_o["tempo_sync"].tolist(),
+                    "diam": df_o["diam_suav"].tolist(),
+                })
+            upsert_tracado_ideal(db, sessao.id, df_ideal, pilotos_ids)
+            db.commit()
+            print(f"✅ [DB] Traçado ideal e {len(todas_metas)} volta(s)-ouro persistidas.")
+        except Exception as e:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"⚠️  [DB] Falha ao persistir — análise não afetada. Erro: {e}")
 
 def main():
     try:

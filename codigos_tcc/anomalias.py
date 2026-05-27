@@ -24,6 +24,16 @@ JANELA_SUAVIZACAO_DERIV = 5
 DURACAO_MINIMA_PCT = 0.8
 TOLERANCIA_GAP_PCT = 0.8
 
+# Detecção aprimorada
+LIMIAR_DTW_SCORE = 5.0
+LIMIAR_DESVIO_RETA_PICO_GRAUS = 25.0
+LIMIAR_DERIVADA_MEDIA = 3.5
+LIMIAR_CHICOTE_IDEAL_GRAUS = 15.0
+LIMIAR_CHICOTE_PILOTO_GRAUS = 45.0
+LIMIAR_OVERSHOOT_GRAUS = 45.0
+DTW_TAMANHO_JANELA = 80
+DTW_PASSO = 20
+
 
 def force_float(val):
     if pd.isna(val):
@@ -112,7 +122,78 @@ def mesclar_e_filtrar(regioes, eixo, tol, dur_min):
     return [(i, f) for i, f in mescladas if eixo[f] - eixo[i] >= dur_min]
 
 
+def dtw_score_janelas(pilot_steer, ideal_steer, tamanho_janela=DTW_TAMANHO_JANELA, passo=DTW_PASSO):
+    try:
+        from fastdtw import fastdtw
+        from scipy.spatial.distance import euclidean
+        usar_dtw = True
+    except ImportError:
+        usar_dtw = False
+
+    n = len(pilot_steer)
+    scores = np.zeros(n)
+    contagens = np.zeros(n)
+    for start in range(0, n - tamanho_janela, passo):
+        end = start + tamanho_janela
+        p = pilot_steer[start:end]
+        i = ideal_steer[start:end]
+        if usar_dtw:
+            dist, _ = fastdtw(p.reshape(-1, 1), i.reshape(-1, 1), dist=euclidean)
+        else:
+            dist = float(np.sum(np.abs(p - i)))
+        scores[start:end] += dist / tamanho_janela
+        contagens[start:end] += 1
+    contagens[contagens == 0] = 1
+    return scores / contagens
+
+
+def centralizar_no_pico(regioes, delta, limiar_relativo=0.2):
+    resultado = []
+    n = len(delta)
+    for ini, fim in regioes:
+        segmento = np.abs(delta[ini : fim + 1])
+        if len(segmento) == 0:
+            continue
+        peak_local = int(np.argmax(segmento))
+        peak_idx = ini + peak_local
+        limiar = segmento[peak_local] * limiar_relativo
+        start = peak_idx
+        while start > 0 and np.abs(delta[start - 1]) >= limiar:
+            start -= 1
+        end = peak_idx
+        while end < n - 1 and np.abs(delta[end + 1]) >= limiar:
+            end += 1
+        resultado.append((start, end))
+    return resultado
+
+
+def filtrar_por_pico(regioes, sinal, limiar_pico):
+    return [
+        (i, f) for i, f in regioes
+        if len(sinal[i : f + 1]) > 0 and np.max(np.abs(sinal[i : f + 1])) >= limiar_pico
+    ]
+
+
+def coalescer_recuperacoes(regioes_a, regioes_bc, eixo_pct, janela_pct=5.0):
+    regioes_a = [list(r) for r in regioes_a]
+    absorvidas = set()
+    for a in regioes_a:
+        fim_a_pct = eixo_pct[a[1]]
+        for j, bc in enumerate(regioes_bc):
+            if j in absorvidas:
+                continue
+            ini_bc_pct = eixo_pct[bc[0]]
+            if 0.0 <= ini_bc_pct - fim_a_pct <= janela_pct:
+                a[1] = max(a[1], bc[1])
+                absorvidas.add(j)
+    regioes_bc_restantes = [r for j, r in enumerate(regioes_bc) if j not in absorvidas]
+    return [tuple(r) for r in regioes_a], regioes_bc_restantes
+
+
 def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
+    delta = piloto_steer - steering_medio
+    dtw_scores = dtw_score_janelas(piloto_steer, steering_medio)
+
     eh_reta = np.abs(steering_medio) < LIMIAR_RETA_GRAUS
     eh_curva = ~eh_reta
 
@@ -120,8 +201,15 @@ def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
     magnitude_ok = (np.abs(piloto_steer) > LIMIAR_SINAL_INVERTIDO_GRAUS) & (
         np.abs(steering_medio) > LIMIAR_SINAL_INVERTIDO_GRAUS
     )
-    mascara_a = sinal_oposto & magnitude_ok & eh_curva
-    mascara_b = eh_reta & (np.abs(piloto_steer) > LIMIAR_DESVIO_RETA_GRAUS)
+    mascara_chicote = (
+        (np.abs(steering_medio) <= LIMIAR_CHICOTE_IDEAL_GRAUS) &
+        (np.abs(piloto_steer) >= LIMIAR_CHICOTE_PILOTO_GRAUS)
+    )
+    mascara_overshoot = np.abs(delta) > LIMIAR_OVERSHOOT_GRAUS
+    mascara_a = (
+        (sinal_oposto & magnitude_ok & eh_curva) | mascara_chicote | mascara_overshoot
+    ) & (dtw_scores > LIMIAR_DTW_SCORE)
+    mascara_b = eh_reta & (np.abs(piloto_steer) > LIMIAR_DESVIO_RETA_GRAUS) & (dtw_scores > LIMIAR_DTW_SCORE)
 
     steer_suav = pd.Series(piloto_steer).rolling(
         window=JANELA_SUAVIZACAO_DERIV, center=True, min_periods=1
@@ -135,9 +223,22 @@ def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
     regioes_b = mesclar_e_filtrar(
         agrupar_regioes(mascara_b, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
+    regioes_b = filtrar_por_pico(regioes_b, piloto_steer, LIMIAR_DESVIO_RETA_PICO_GRAUS)
+
     regioes_c = mesclar_e_filtrar(
         agrupar_regioes(mascara_c, eixo_pct), eixo_pct, TOLERANCIA_GAP_PCT, DURACAO_MINIMA_PCT
     )
+    regioes_c = [
+        (i, f) for i, f in regioes_c
+        if len(derivada[i : f + 1]) > 0 and np.mean(derivada[i : f + 1]) >= LIMIAR_DERIVADA_MEDIA
+    ]
+
+    regioes_a = centralizar_no_pico(regioes_a, delta)
+    regioes_b = centralizar_no_pico(regioes_b, delta)
+    regioes_c = centralizar_no_pico(regioes_c, derivada)
+
+    regioes_a, regioes_b = coalescer_recuperacoes(regioes_a, regioes_b, eixo_pct)
+    regioes_a, regioes_c = coalescer_recuperacoes(regioes_a, regioes_c, eixo_pct)
 
     anomalias = []
     for tipo, regioes in [("A", regioes_a), ("B", regioes_b), ("C", regioes_c)]:
@@ -154,7 +255,7 @@ def detectar_anomalias(piloto_steer, steering_medio, steering_sigma, eixo_pct):
     return anomalias, derivada
 
 
-def carregar_piloto(nome, caminhos, df_meta):
+def carregar_piloto(nome, caminhos, df_meta, sessao_nome):
     df_pupil = pd.read_csv(str(caminhos["pupila"]), sep=None, engine="python", on_bad_lines="skip")
     df_pupil.columns = [str(c).strip() for c in df_pupil.columns]
 
@@ -185,22 +286,40 @@ def carregar_piloto(nome, caminhos, df_meta):
     df_pupil[c_p_d] = df_pupil[c_p_d].apply(limpa_diametro)
     df_pupil = df_pupil.dropna(subset=[c_p_t, c_p_d])
 
-    t_vals_raw = df_pupil[c_p_t].values.astype(float)
-    range_ts = t_vals_raw[-1] - t_vals_raw[0]
-    if range_ts > 100_000:
+    from backend.database import SessionLocal
+    from backend.db_ops import get_or_create_piloto as _get_piloto
+    from backend.db_ops import get_or_create_sessao as _get_sessao
+    from backend.models import ParametrosSync
+
+    with SessionLocal() as _db:
+        _sessao = _get_sessao(_db, sessao_nome)
+        _piloto = _get_piloto(_db, nome)
+        _params = _db.query(ParametrosSync).filter_by(
+            sessao_id=_sessao.id, piloto_id=_piloto.id
+        ).first()
+        if not _params or _params.frame_sync is None:
+            raise Exception(
+                f"frame_sync ausente para '{nome}' na sessao '{sessao_nome}'. "
+                "Execute sincronizacao.py antes."
+            )
+        frame_sync = _params.frame_sync
+
+    print(f"   [{nome}] frame_sync lido do banco: {frame_sync}")
+    t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
+
+    t_raw = df_pupil[c_p_t].values.astype(float) - t_sync_p
+    mediana_abs = np.nanmedian(np.abs(t_raw))
+    if mediana_abs > 100_000:
         escala = 1_000_000.0
         print(f"   [{nome}] Pupila em us -> s")
-    elif range_ts > 500:
+    elif mediana_abs > 500:
         escala = 1_000.0
         print(f"   [{nome}] Pupila em ms -> s")
     else:
         escala = 1.0
         print(f"   [{nome}] Pupila ja em s")
 
-    frame_sync = int(input(f"\n[{nome}] FRAME do Marco Zero no Pupil Player: ").strip())
-    t_sync_p = atirar_com_sniper(frame_sync, df_pupil, c_p_wi, c_p_t)
-
-    t_pupila = (df_pupil[c_p_t].values.astype(float) - t_sync_p) / escala
+    t_pupila = t_raw / escala
     diam_pupila = pd.Series(df_pupil[c_p_d].values).rolling(window=5, center=True).mean().values
 
     df_m = pd.read_csv(
@@ -228,6 +347,8 @@ def executar():
         raise Exception("Rode o Codigo 1 primeiro.")
     if not os.path.exists(ARQUIVO_VOLTAS):
         raise Exception("Arquivo de metadados nao encontrado. Rode o Codigo 1 primeiro.")
+
+    sessao_nome = input("Nome da sessao (deve coincidir com sincronizacao.py, ex: 'InterTatus'): ").strip() or "InterTatus"
 
     df_ideal = pd.read_csv(ARQUIVO_IDEAL)
     df_meta = pd.read_csv(ARQUIVO_VOLTAS)
@@ -259,7 +380,7 @@ def executar():
         print(f"   CARREGANDO: {nome.upper()}")
         print(f"{'=' * 60}")
 
-        df_m, t_pupila, diam_pupila, t_sync_m = carregar_piloto(nome, caminhos, df_meta)
+        df_m, t_pupila, diam_pupila, t_sync_m = carregar_piloto(nome, caminhos, df_meta, sessao_nome)
 
         lap_counts = sorted(df_m["lap_count"].dropna().unique())
         if len(lap_counts) > 1:
@@ -385,14 +506,11 @@ def executar():
 
             ax_pedal.plot(eixo_pct, acel_v, color="orange", linewidth=1.2, label="Acelerador")
             ax_pedal.plot(eixo_pct, freio_v, color="green", linewidth=1.2, label="Freio")
-            ax_pedal.plot(eixo_pct, acel_medio, color="orange", linewidth=1.5, linestyle="--", alpha=0.5, label="Acel ideal")
-            ax_pedal.plot(eixo_pct, freio_medio, color="green", linewidth=1.5, linestyle="--", alpha=0.5, label="Freio ideal")
             ax_pedal.set_ylabel("%", fontsize=9)
             ax_pedal.legend(loc="upper right", fontsize=7)
             ax_pedal.grid(True, alpha=0.3)
 
             ax_pupil.plot(eixo_pct, pup_v, color="purple", linewidth=1.2, label="Pupila")
-            ax_pupil.plot(eixo_pct, pupila_medio, color="purple", linewidth=1.5, linestyle="--", alpha=0.5, label="Pupila ideal")
             ax_pupil.set_ylabel("Diametro (mm)", fontsize=9)
             ax_pupil.set_xlabel("Progresso da Volta (%)", fontsize=10)
             ax_pupil.legend(loc="upper right", fontsize=7)
@@ -439,10 +557,61 @@ def executar():
     df_anom = pd.DataFrame(todas_anomalias_registro)
     df_anom.to_csv(ARQUIVO_ANOMALIAS, index=False)
 
+    _persistir_banco_anomalias(todas_anomalias_registro, sessao_nome)
+
     print(f"\n{'=' * 60}")
     print(f"{imagens_geradas} imagem(ns) gerada(s) em: {GRAFICOS_VOLTAS_DIR}")
     print(f"{len(todas_anomalias_registro)} anomalia(s) registrada(s) em: {ARQUIVO_ANOMALIAS}")
     print(f"{'=' * 60}")
+
+
+def _persistir_banco_anomalias(todas_anomalias_registro, sessao_nome="InterTatus"):
+    try:
+        from backend.database import SessionLocal
+        from backend.db_ops import (
+            get_or_create_piloto, get_or_create_sessao,
+            upsert_volta, upsert_anomalia,
+        )
+        from backend.models import TracadoIdeal as TracadoIdealModel
+
+        db = SessionLocal()
+        try:
+            sessao = get_or_create_sessao(db, sessao_nome)
+            ti = db.query(TracadoIdealModel).filter_by(sessao_id=sessao.id).first()
+            ti_id = ti.id if ti else None
+
+            count = 0
+            for rec in todas_anomalias_registro:
+                piloto = get_or_create_piloto(db, rec["piloto"])
+                t_ini = float(rec["t_ini_volta"])
+                t_fim = float(rec["t_fim_volta"])
+                volta = upsert_volta(
+                    db, sessao.id, piloto.id,
+                    numero_volta=int(rec["volta_num"]),
+                    t_ini=t_ini,
+                    t_fim=t_fim,
+                    duracao=t_fim - t_ini,
+                )
+                upsert_anomalia(
+                    db, volta.id,
+                    numero_anomalia=int(rec["anom_num"]),
+                    tipo=str(rec["tipo"]),
+                    ini_pct=float(rec["ini_pct"]),
+                    fim_pct=float(rec["fim_pct"]),
+                    t_ini_s=t_ini,
+                    t_fim_s=t_fim,
+                    tracado_ideal_id=ti_id,
+                )
+                count += 1
+            db.commit()
+            print(f"✅ [DB] {count} anomalia(s) persistida(s).")
+        except Exception as e:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"⚠️  [DB] Falha ao persistir anomalias — análise não afetada. Erro: {e}")
 
 
 def main():

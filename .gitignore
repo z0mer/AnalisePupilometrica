@@ -1,0 +1,26 @@
+# Ambiente Virtual Python
+.venv/
+venv/
+env/
+__pycache__/
+
+# Dados brutos de Analise Pupilometrica
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.json
+*.dat
+
+# Bancos de dados e credenciais (Proteção para o Neon/PostgreSQL)
+.env
+*.db
+*.sqlite3
+
+# Arquivos do sistema (Windows/Mac)
+.DS_Store
+Thumbs.db
+
+#Arquivos do MOTEC
+*.ld
+*.ldx
