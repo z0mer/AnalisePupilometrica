@@ -24,3 +24,7 @@ Thumbs.db
 #Arquivos do MOTEC
 *.ld
 *.ldx
+
+#Arquivos de imagens
+*.png
+*.jpg

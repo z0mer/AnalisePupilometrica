@@ -6,21 +6,32 @@ Cada domínio tem seu próprio router em backend/routers/.
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import OperationalError
 
 from backend.config import SAIDAS_DIR
 from backend.database import create_tables
 from backend.routers import cadastro, misc, motec, pilotos, processamento, sessoes
 
-create_tables()
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Análise Pupilométrica API",
     description="API para processamento de dados de pupilometria e telemetria MoTeC.",
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+def initialize_database() -> None:
+    try:
+        create_tables()
+    except OperationalError as exc:
+        logger.warning("Banco de dados indisponível na inicialização: %s", exc)
 
 # ---------------------------------------------------------------------------
 # CORS
